@@ -1,0 +1,146 @@
+---
+title: "file_by_file_def"
+output: html_document
+date: "2025-09-12"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### `prepare_selection_data.R`
+**Purpose**  
+Preprocess the input data for selection analysis.
+**Key steps**
+- Type checks
+- Optional z-scoring of trait columns (for continuous fitness)
+- Computes `relative_fitness = fitness / mean(fitness)`
+**Notes**  
+Ensures traits are standardized and a consistent response (`relative_fitness`) is available upstream.
+
+---
+
+### `detect_family.R`
+**Purpose**  
+Heuristically picks the GLM family from the fitness column.  
+**Key steps**
+- If fitness values are in `{0,1}`, returns `binomial("logit")`; otherwise `gaussian()`.  
+**Notes** 
+High-level analysis wrappers when the user doesn’t specify a family.  
+---
+
+### `analyze_linear_selection.R`
+**Purpose** 
+Fits the directional (linear) selection model.  
+**Key steps**
+- Continuous fitness → `lm(relative_fitness ~ traits)` (uses relative fitness if present).  
+- Binary fitness → `glm(fitness ~ traits, family = binomial("logit"))`.  
+**Notes** 
+Output: List with model, summary, and (if **car** is installed) a Type-III ANOVA.  
+
+---
+
+### `analyze_nonlinear_selection.R`
+**Purpose**  
+Fits the nonlinear model including quadratic and pairwise interaction terms.  
+**Formula:** 
+`response ~ traits + I(trait^2) + trait1:trait2 (+ ...)`.  
+**Scope:** 
+Works with one trait (quadratic only) or ≥2 traits (quadratic + correlational).
+**Notes**
+Output: List with model, summary, and optional Type-III ANOVA.  
+
+---
+
+### `extract_results.R`
+**Purpose** 
+Extracts tidy coefficient tables from model summaries.  
+**Helpers provided:**  
+- `extract_linear_coefficients()` → β (directional).  
+- `extract_quadratic_coefficients()` → γᵢᵢ from `2 * coef(I(trait^2))`; SE multiplied by 2.  
+- `extract_interaction_coefficients()` → γᵢⱼ from `coef(trait_i:trait_j)`.  
+**Columns returned:** 
+-`Term`, `Type` (Linear / Quadratic / Correlational), -`Beta_Coefficient`, `Standard_Error`, `P_Value`.  
+**Notes**
+Optionally add `Variance = Standard_Error^2` when binding results.  
+
+---
+
+### `selection_differential.R`
+**Purpose**  
+Computes the selection differential  
+\( S = \text{Cov}(w_{rel}, z) \).
+**Key steps**
+- If `assume_standardized = FALSE`: z-scores the single trait inside.
+- If `use_relative = TRUE`: divides fitness by its mean.  
+- With standardized z, \( S = \text{mean}(w_{rel} \cdot z) \).
+
+
+### `univariate_spline.R`
+**Purpose**  
+Fits a univariate GAM with a spline on one trait.
+**Details**
+- Continuous fitness → Gaussian family (often with `relative_fitness`).  
+- Binary fitness → Binomial (logit).  
+**Output**
+- `model` (the `mgcv::gam` object).  
+- `grid` with predictions on the response scale and 95% bands: `{trait, fit, lwr, upr}`.
+
+
+### `univariate_surface.R`
+**Purpose**  
+Plots the univariate spline with a 95% ribbon.
+**Input**  
+Output of `univariate_spline()`.
+**Output**  
+A `ggplot` object.
+
+
+### `correlational_tps.R`
+**Purpose**  
+Fits a thin-plate spline surface over two traits using `fields::Tps`.
+**Details**
+- Response: continuous fitness (optionally relative) or raw binary (0/1).  
+- Output:  
+  - `model` (the `Tps` object).  
+  - `grid` covering observed trait ranges with `.fit` predictions on the response scale.  
+**Notes**  
+If `fields::Tps` is fragile (centering/scaling issues), use an alternative `mgcv` surface with `s(x, y, bs = "tp")`.
+
+
+### `correlation_surface.R`
+**Purpose**  
+Plots a filled contour (and optional contour lines) for the correlational surface.
+**Input**  
+Output of `correlational_tps()` (or mgcv alternative) and the two trait names.
+**Output**  
+A `ggplot` object with `geom_contour_filled()`.
+
+
+### `bootstrap_selection.R`
+**Purpose**  
+Percentile bootstrap (over individuals) for β/γ estimates.
+**Pipeline**
+- Standardizes traits once.  
+- Resamples rows.  
+- Refits linear & nonlinear models.  
+- Re-extracts coefficients.  
+- Summarizes median and percentile CI per term.  
+**Output**
+- `draws` (all bootstrap replicates, long format).  
+- `ci` (per-term median, lower, upper).  
+**Notes**  
+Can be parallelized or augmented with progress indicators.
+
+---
+
+### What the package returns 
+- **Coefficient table (tidy)**
+  - Columns: `Term`, `Type` (Linear / Quadratic / Correlational), 
+    `Beta_Coefficient`, `Standard_Error`, `P_Value`, and optionally `Variance`.
+- **Univariate surface**
+  - A GAM curve with a 95% ribbon on the response scale.
+- **Correlational surface**
+  - A thin-plate spline visualization with filled contours over two traits.
+- **Bootstrap confidence intervals**
+  - Percentile confidence intervals for each reported coefficient.
