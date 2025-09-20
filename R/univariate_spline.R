@@ -10,6 +10,7 @@
 #'
 #' @return A list with \code{model} and \code{grid} (predictions on response scale).
 #' @export
+
 univariate_spline <- function(data, fitness_col, trait_col,
                               fitness_type = c("binary","continuous"),
                               k = 10) {

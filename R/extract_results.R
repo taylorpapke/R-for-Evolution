@@ -21,6 +21,7 @@
 #' @param results A list from \code{analyze_linear_selection()}.
 #' @return A tidy \code{data.frame}.
 #' @export
+
 extract_linear_coefficients <- function(trait_cols, results) {
   sm <- results$summary$coefficients
   pcol <- .p_col_from_summary(sm)

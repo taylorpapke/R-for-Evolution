@@ -1,0 +1,24 @@
+SELECTION ANALYSIS TEST REPORT
+==================================================
+Test completed: 2025-09-19 23:15:46.669601
+Duration: 11.9 seconds
+
+TEST RESULTS SUMMARY:
+- Binary coefficients: 5 rows
+- Continuous coefficients: 5 rows
+- Selection differential: 0.01114
+- Bootstrap CIs: 5 intervals
+
+VISUALIZATION SUMMARY:
+- Total plots generated: 13
+- Continuous univariate plots: 3
+- Binary univariate plots: 2
+- Continuous correlation plots: 3
+- Binary correlation plots: 2
+- Spline complexity plots: 3
+
+FAMILY DETECTION:
+- Binary data: binary
+- Continuous data: continuous
+
+SUCCESS: All tests and visualizations completed successfully!
