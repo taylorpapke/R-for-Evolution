@@ -1,12 +1,34 @@
 
 cat("=== EXTENDED PARAMETER AND BOUNDARY TESTING ===\n\n")
 
+# === Dependency Check & Auto-Install ===
+required_packages <- c("ggplot2", "fields", "car")
+
+for (pkg in required_packages) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    install.packages(pkg, repos = "https://cloud.r-project.org")
+  }
+  suppressPackageStartupMessages(library(pkg, character.only = TRUE))
+}
+
+# --- Ensure script runs from its own folder ---
+args <- commandArgs(trailingOnly = FALSE)
+scriptPath <- NULL
+fileArg <- grep("^--file=", args, value = TRUE)
+if (length(fileArg) > 0) {
+  scriptPath <- normalizePath(sub("^--file=", "", fileArg))
+} else {
+  scriptPath <- normalizePath(".")
+}
+this.dir <- dirname(scriptPath)
+setwd(this.dir)
+
 # 1) Load all functions
 cat("1. Loading all functions...\n")
 function_files <- c(
   "prepare_selection_data.R", "analyze_linear_selection.R", "analyze_nonlinear_selection.R",
-  "extract_results.R", "selection_coefficients.R", "detect_family.R", "selection_differential.R", 
-  "univariate_spline.R", "univariate_surface.R", "correlational_tps.R", "correlation_surface.R", 
+  "extract_results.R", "selection_coefficients.R", "detect_family.R", "selection_differential.R",
+  "univariate_spline.R", "univariate_surface.R", "correlational_tps.R", "correlation_surface.R",
   "bootstrap_selection.R"
 )
 
@@ -310,7 +332,7 @@ generate_extended_report <- function(selection_results, boundary_results, spline
     sep = "\n"
   )
   
-  writeLines(report, "extended_test_report.txt")
+  writeLines(report, "results/summary/extended_test_report.txt")
   return(report)
 }
 

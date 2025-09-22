@@ -1,10 +1,32 @@
 cat("=== COMPLETE SELECTION ANALYSIS WORKFLOW ===\n\n")
 
-# 1. set up environment 
+# === Dependency Check & Auto-Install ===
+required_packages <- c("ggplot2", "fields", "car")
+
+for (pkg in required_packages) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    install.packages(pkg, repos = "https://cloud.r-project.org")
+  }
+  suppressPackageStartupMessages(library(pkg, character.only = TRUE))
+}
+
+# --- Ensure script runs from its own folder ---
+args <- commandArgs(trailingOnly = FALSE)
+scriptPath <- NULL
+fileArg <- grep("^--file=", args, value = TRUE)
+if (length(fileArg) > 0) {
+  scriptPath <- normalizePath(sub("^--file=", "", fileArg))
+} else {
+  scriptPath <- normalizePath(".")
+}
+this.dir <- dirname(scriptPath)
+setwd(this.dir)
+
+# 1. set up environment
 cat("1. Setting up environment...\n")
 start_time <- Sys.time()
 
-# create results folders 
+# create results folders
 create_directories <- function() {
   dirs <- c("results", "results/data", "results/tables", "results/figures", "results/summary")
   for (dir in dirs) {
@@ -13,12 +35,12 @@ create_directories <- function() {
 }
 create_directories()
 
-# 2. load all the functions 
+# 2. load all the functions
 cat("2. Loading all functions...\n")
 function_files <- c(
   "prepare_selection_data.R", "analyze_linear_selection.R", "analyze_nonlinear_selection.R",
-  "extract_results.R", "selection_coefficients.R", "detect_family.R", "selection_differential.R", 
-  "univariate_spline.R", "univariate_surface.R", "correlational_tps.R", "correlation_surface.R", 
+  "extract_results.R", "selection_coefficients.R", "detect_family.R", "selection_differential.R",
+  "univariate_spline.R", "univariate_surface.R", "correlational_tps.R", "correlation_surface.R",
   "bootstrap_selection.R"
 )
 
