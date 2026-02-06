@@ -5,7 +5,7 @@
   if (length(pcols)) pcols[1] else NA_character_
 }
 
-# internal utility: safely extract ANOVA p-value (car::Anova), if available
+# internal utility: safely extract ANOVA p-value (car::Anova)
 .ano_p <- function(anova_obj, term) {
   if (is.null(anova_obj)) return(NA_real_)
   rn <- rownames(anova_obj)
@@ -15,12 +15,7 @@
   as.numeric(anova_obj[term, pcols[1]])
 }
 
-#' Extract Linear (Directional) Coefficients
-#'
-#' @param trait_cols Character vector of trait names.
-#' @param results A list from \code{analyze_linear_selection()}.
-#' @return A tidy \code{data.frame}.
-#' @export
+# extract Linear (Directional) Coefficients
 extract_linear_coefficients <- function(trait_cols, results) {
   sm <- results$summary$coefficients
   pcol <- .p_col_from_summary(sm)
@@ -45,13 +40,7 @@ extract_linear_coefficients <- function(trait_cols, results) {
   do.call(rbind, rows)
 }
 
-#' Extract Quadratic Coefficients (Gamma Diagonal)
-#'
-#' Lande & Arnold convention: diagonal gamma = 2 * coefficient of I(trait^2).
-#'
-#' @inheritParams extract_linear_coefficients
-#' @return A tidy \code{data.frame}.
-#' @export
+# extract Quadratic Coefficients
 extract_quadratic_coefficients <- function(trait_cols, results) {
   sm <- results$summary$coefficients
   pcol <- .p_col_from_summary(sm)
@@ -84,13 +73,7 @@ extract_quadratic_coefficients <- function(trait_cols, results) {
   do.call(rbind, rows)
 }
 
-#' Extract Correlational Coefficients (Gamma Off-Diagonal)
-#'
-#' Lande & Arnold convention: off-diagonal gamma = coefficient of trait1:trait2.
-#'
-#' @inheritParams extract_linear_coefficients
-#' @return A tidy \code{data.frame}.
-#' @export
+# extract Correlational Coefficients
 extract_interaction_coefficients <- function(trait_cols, results) {
   if (length(trait_cols) < 2) {
     return(data.frame(Term=character(), Type=character(),

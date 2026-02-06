@@ -1,13 +1,4 @@
-#' Standardized Univariate Selection Surface (Plot)
-#'
-#' Plot the fitted cubic spline with 95% confidence ribbon.
-#'
-#' @param uni A list returned by \code{univariate_spline()}.
-#' @param trait_col Character; trait column used in \code{uni}.
-#' @param title Optional plot title.
-#'
-#' @return A \code{ggplot} object.
-#' @export
+
 univariate_surface <- function(uni, trait_col, title = NULL) {
   stopifnot(is.list(uni), "grid" %in% names(uni))
   grid <- uni$grid

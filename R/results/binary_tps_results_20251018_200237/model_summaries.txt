@@ -1,0 +1,163 @@
+=== MODEL SUMMARIES ===
+
+
+ ================================================== 
+METHOD: gam_tp 
+================================================== 
+
+Family: binomial 
+Link function: logit 
+
+Formula:
+y ~ s(x1, x2, bs = "tp")
+
+Parametric coefficients:
+            Estimate Std. Error z value Pr(>|z|)    
+(Intercept)  0.29214    0.07295   4.005 6.21e-05 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Approximate significance of smooth terms:
+          edf Ref.df Chi.sq p-value   
+s(x1,x2) 11.6  15.85  36.51 0.00225 **
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+R-sq.(adj) =  0.0459   Deviance explained = 4.52%
+-REML = 539.81  Scale est. = 1         n = 800
+
+ ================================================== 
+METHOD: glm 
+================================================== 
+
+Call:
+glm(formula = y ~ x1 + x2 + I(x1^2) + I(x2^2) + x1:x2, family = binomial, 
+    data = data)
+
+Coefficients:
+            Estimate Std. Error z value Pr(>|z|)    
+(Intercept)  0.34205    0.13415   2.550   0.0108 *  
+x1           0.06032    0.06445   0.936   0.3494    
+x2           0.06731    0.06515   1.033   0.3016    
+I(x1^2)      0.01112    0.06241   0.178   0.8587    
+I(x2^2)     -0.05834    0.06173  -0.945   0.3446    
+x1:x2        0.28680    0.05788   4.955 7.23e-07 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 1093.3  on 799  degrees of freedom
+Residual deviance: 1064.5  on 794  degrees of freedom
+AIC: 1076.5
+
+Number of Fisher Scoring iterations: 4
+
+
+ ================================================== 
+METHOD: gam_te 
+================================================== 
+
+Family: binomial 
+Link function: logit 
+
+Formula:
+y ~ te(x1, x2)
+
+Parametric coefficients:
+            Estimate Std. Error z value Pr(>|z|)    
+(Intercept)  0.29738    0.07358   4.041 5.31e-05 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Approximate significance of smooth terms:
+           edf Ref.df Chi.sq p-value    
+te(x1,x2) 7.27  8.223  41.98  <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+R-sq.(adj) =  0.0517   Deviance explained = 4.63%
+-REML = 529.57  Scale est. = 1         n = 800
+
+ ================================================== 
+METHOD: gam_ad 
+================================================== 
+
+Family: binomial 
+Link function: logit 
+
+Formula:
+y ~ s(x1, x2, bs = "ad")
+
+Parametric coefficients:
+            Estimate Std. Error z value Pr(>|z|)    
+(Intercept)  0.29350    0.07315   4.012 6.02e-05 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Approximate significance of smooth terms:
+           edf Ref.df Chi.sq p-value   
+te(x1,x2) 11.8  16.36  39.54 0.00111 **
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+R-sq.(adj) =  0.0492   Deviance explained = 4.82%
+-REML = 532.75  Scale est. = 1         n = 800
+
+ ================================================== 
+METHOD: empirical_tps 
+================================================== 
+TPS model on empirical logits
+CALL:
+Tps(x = cbind(data_binned$x1_center, data_binned$x2_center), 
+    Y = data_binned$emp_logit)
+                                               
+ Number of Observations:                349    
+ Number of unique points:               349    
+ Number of parameters in the null space 3      
+ Parameters for fixed spatial drift     3      
+ Effective degrees of freedom:          12.7   
+ Residual degrees of freedom:           336.3  
+ MLE tau                                1.031  
+ GCV tau                                1.034  
+ MLE sigma                              17.87  
+ Scale passed for covariance (sigma)    <NA>   
+ Scale passed for nugget (tau^2)        <NA>   
+ Smoothing parameter lambda             0.05949
+
+Residual Summary:
+      min     1st Q    median     3rd Q       max 
+-2.627000 -0.695500  0.003512  0.872800  2.162000 
+
+Covariance Model: Rad.cov
+  Names of non-default covariance arguments: 
+       p
+
+DETAILS ON SMOOTHING PARAMETER:
+ Method used:   GCV    Cost:  1
+   lambda       trA       GCV   GCV.one GCV.model    tauHat 
+  0.05949  12.71476   1.11026   1.11026        NA   1.03432 
+
+ Summary of all estimates found for lambda
+            lambda   trA  GCV tauHat -lnLike Prof converge
+GCV        0.05949 12.71 1.11  1.034        510.4        2
+GCV.model       NA    NA   NA     NA           NA       NA
+GCV.one    0.05949 12.71 1.11  1.034           NA        2
+RMSE            NA    NA   NA     NA           NA       NA
+pure error      NA    NA   NA     NA           NA       NA
+REML       0.05094 13.58 1.11  1.033        510.3        8
+
+ ================================================== 
+METHOD: local_likelihood 
+================================================== 
+Estimation type: Local Likelihood - Binomial 
+
+Call:
+locfit(formula = y ~ lp(x1, x2, nn = 0.3), data = data, family = "binomial")
+
+Number of data points:  800 
+Independent variables:  x1 x2 
+Evaluation structure: Rectangular Tree 
+Number of evaluation points:  52 
+Degree of fit:  2 
+Fitted Degrees of Freedom:  22.575 

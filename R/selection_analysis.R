@@ -1,21 +1,4 @@
-#' Lande and Arnold (1983) Selection Analysis Framework
-#'
-#' Implementation of the Lande & Arnold (1983) regression approach
-#' to quantify natural selection on quantitative traits.
-#'
-#' @param data A data.frame containing fitness and traits.
-#' @param fitness_col Character. Name of the fitness column.
-#' @param trait_cols Character vector. Names of trait columns.
-#' @param standardize Logical; whether to z-score traits (default TRUE).
-#' @param family Optional GLM family. If NULL, auto-detected from fitness.
-#'
-#' @return A list with:
-#' \item{coefficients_table}{Tidy table of linear/quadratic/correlational coefficients}
-#' \item{prepared_data}{Preprocessed data (traits standardized if requested)}
-#' \item{fitness_type}{"binary" or "continuous"}
-#' \item{analysis_date}{Date of analysis}
-#' \item{models}{List with fitted linear/nonlinear models}
-#' @export
+
 selection_analysis <- function(data,
                                fitness_col,
                                trait_cols,

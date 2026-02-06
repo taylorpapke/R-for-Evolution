@@ -1,0 +1,132 @@
+FUNCTION TEST REPORT
+===================
+
+Test Date: 2025-11-22 00:50:17.505517 
+Data Source: Crescent Pond puppyfish
+Observations: 892 
+
+FUNCTION PERFORMANCE SUMMARY:
+-----------------------------
+Data Preparation: ✓ SUCCESS 
+Selection Analysis: ✓ PARTIAL SUCCESS 
+Fitness Surfaces: ✓ SUCCESS 
+
+DETAILED RESULTS:
+-----------------
+BINARY FITNESS SELECTION COEFFICIENTS:
+            Term          Type Beta_Coefficient Standard_Error      P_Value
+1            jaw        Linear       0.27901415     0.17085730 0.1024638577
+2            eye        Linear       0.19274190     0.11412545 0.0912462917
+3           body        Linear       0.01535473     0.13389790 0.9087027830
+4          nasal        Linear      -0.33933747     0.09895692 0.0006054895
+5          mouth        Linear       0.03631422     0.09923037 0.7143958492
+6             SL        Linear      -0.36735099     0.13332513 0.0058638012
+7           jaw²     Quadratic      -0.67843825     0.50759994 0.1813660001
+8           eye²     Quadratic      -0.34105081     0.23289483 0.1430851353
+9          body²     Quadratic      -0.18133784     0.30913392 0.5574726385
+10        nasal²     Quadratic       0.06366458     0.16927419 0.7068401109
+11        mouth²     Quadratic      -0.23488429     0.17041759 0.1681148109
+12           SL²     Quadratic       0.19628362     0.31816282 0.5372820822
+13     jaw × eye Correlational      -0.15389451     0.28235455 0.5857260337
+14    jaw × body Correlational      -0.37223797     0.32650547 0.2542585716
+15   jaw × nasal Correlational      -0.22989375     0.23042498 0.3184275047
+16   jaw × mouth Correlational       0.39149248     0.24592689 0.1114058353
+17      jaw × SL Correlational      -0.39977258     0.30595370 0.1913336249
+18    eye × body Correlational      -0.38621435     0.20939390 0.0651191336
+19   eye × nasal Correlational       0.13723906     0.15354602 0.3714302055
+20   eye × mouth Correlational      -0.01264923     0.15734814 0.9359270103
+21      eye × SL Correlational      -0.25539921     0.19702314 0.1948754395
+22  body × nasal Correlational      -0.28426672     0.16959312 0.0937051073
+23  body × mouth Correlational       0.32369099     0.17487981 0.0641790490
+24     body × SL Correlational      -0.25083043     0.22775173 0.2707518919
+25 nasal × mouth Correlational       0.23269969     0.13800828 0.0917710623
+26    nasal × SL Correlational       0.20679700     0.16749817 0.2169710496
+27    mouth × SL Correlational       0.15336790     0.16745173 0.3597229232
+      Variance
+1  0.029192218
+2  0.013024619
+3  0.017928647
+4  0.009792472
+5  0.009846666
+6  0.017775591
+7  0.257657700
+8  0.054240002
+9  0.095563779
+10 0.028653751
+11 0.029042155
+12 0.101227580
+13 0.079724093
+14 0.106605823
+15 0.053095673
+16 0.060480036
+17 0.093607664
+18 0.043845805
+19 0.023576379
+20 0.024758436
+21 0.038818117
+22 0.028761826
+23 0.030582949
+24 0.051870851
+25 0.019046287
+26 0.028055636
+27 0.028040082
+
+CONTINUOUS FITNESS SELECTION COEFFICIENTS:
+            Term          Type Beta_Coefficient Standard_Error     P_Value
+1            jaw        Linear      0.491495125      0.1767270 0.005532632
+2            eye        Linear     -0.030260153      0.1218064 0.803860682
+3           body        Linear      0.123037708      0.1483672 0.407170533
+4          nasal        Linear     -0.215362152      0.1105922 0.051808294
+5          mouth        Linear     -0.002147097      0.1094288 0.984350169
+6             SL        Linear      0.130591862      0.1487933 0.380359430
+7           jaw²     Quadratic      0.497122744      0.4392486 0.258050526
+8           eye²     Quadratic     -0.106972383      0.2075286 0.606364494
+9          body²     Quadratic     -0.284649581      0.3217843 0.376619849
+10        nasal²     Quadratic      0.190700635      0.1703816 0.263341999
+11        mouth²     Quadratic      0.454814060      0.1651021 0.005997307
+12           SL²     Quadratic      0.127757483      0.3397166 0.706956599
+13     jaw × eye Correlational      0.186030213      0.2488748 0.454974201
+14    jaw × body Correlational     -0.058645780      0.3074073 0.848746307
+15   jaw × nasal Correlational     -0.017092075      0.2143965 0.936476993
+16   jaw × mouth Correlational      0.065612553      0.2223017 0.767949478
+17      jaw × SL Correlational      0.240080678      0.2919032 0.411038272
+18    eye × body Correlational     -0.254696618      0.1951365 0.192164522
+19   eye × nasal Correlational      0.169468080      0.1511007 0.262362328
+20   eye × mouth Correlational     -0.073679963      0.1464054 0.614909866
+21      eye × SL Correlational      0.207056261      0.1879686 0.270965363
+22  body × nasal Correlational     -0.182851187      0.1681388 0.277118464
+23  body × mouth Correlational      0.028528114      0.1642427 0.862145946
+24     body × SL Correlational      0.236047306      0.2400969 0.325816897
+25 nasal × mouth Correlational     -0.183511185      0.1359711 0.177487014
+26    nasal × SL Correlational      0.047463376      0.1668153 0.776075032
+27    mouth × SL Correlational      0.334887099      0.1664334 0.044515307
+     Variance
+1  0.03123244
+2  0.01483680
+3  0.02201283
+4  0.01223064
+5  0.01197465
+6  0.02213945
+7  0.19293930
+8  0.04306811
+9  0.10354513
+10 0.02902989
+11 0.02725872
+12 0.11540736
+13 0.06193868
+14 0.09449925
+15 0.04596588
+16 0.04941804
+17 0.08520750
+18 0.03807826
+19 0.02283142
+20 0.02143454
+21 0.03533219
+22 0.02827065
+23 0.02697566
+24 0.05764651
+25 0.01848814
+26 0.02782733
+27 0.02770009
+
+VALIDATION STATUS: PASS 

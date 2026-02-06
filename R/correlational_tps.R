@@ -1,86 +1,227 @@
-#' Thin-Plate Spline Surface for Correlational Selection (2 Traits)
-#'
-#' Fits \code{fields::Tps} on two traits and fitness.
-#' For continuous fitness, you may use relative fitness (divide by mean).
-#' For binary fitness (0/1), \code{use_relative} is ignored.
-#'
-#' @param data A data.frame.
-#' @param fitness_col Character. Fitness column.
-#' @param trait_cols Character vector of length 2. Two numeric trait columns.
-#' @param use_relative Logical; if TRUE and fitness is continuous, divide by mean (default TRUE).
-#' @param grid_n Integer; resolution per trait for the prediction grid (default 60).
-#'
-#' @return A list with \code{model} and \code{grid} (data.frame of gridded predictions).
-#' @export
 
-correlational_tps <- function(data, fitness_col, trait_cols, use_relative = TRUE, grid_n = 60) {
-  if (length(trait_cols) != 2L) stop("`trait_cols` must be length 2.")
-  if (!all(c(fitness_col, trait_cols) %in% names(data))) stop("Columns not found.")
+# purpose： to estimate a two trait fitness surface using a parametric quadratic model 
+# the function fits where 
+# a logistic regression when fitness is binary 
+# a TPS when fitness is continuous 
 
-  # keep complete rows
+
+
+# ---------- helpers ----------
+`%||%` <- function(a, b) if (!is.null(a)) a else b
+
+
+correlational_tps <- function(
+    data,
+    fitness_col,
+    trait_cols,
+    grid_n = 60,
+    method = "auto",
+    scale_traits = TRUE,
+    k = 30
+) {
+  
+  stopifnot(length(trait_cols) == 2L)
   need <- c(fitness_col, trait_cols)
-  keep <- stats::complete.cases(data[, need, drop = FALSE])
-  df <- data[keep, , drop = FALSE]
-  if (!nrow(df)) stop("No complete cases for fitness and traits.")
-
-  # strict numeric coercion with clear errors
-  to_num <- function(x, nm) {
-    if (is.numeric(x)) return(as.numeric(x))
-    x2 <- suppressWarnings(as.numeric(x))
-    if (any(is.na(x2) & !is.na(x))) stop(sprintf("Column '%s' cannot be coerced to numeric.", nm))
-    x2
+  
+  if (!all(need %in% names(data))) {
+    stop("Missing columns: ", paste(setdiff(need, names(data)), collapse = ", "))
   }
-  x1 <- to_num(df[[trait_cols[1]]], trait_cols[1])
-  x2 <- to_num(df[[trait_cols[2]]], trait_cols[2])
-  y  <- to_num(df[[fitness_col]],  fitness_col)
-
-  # relative fitness only if not binary
-  u <- sort(unique(stats::na.omit(y)))
-  is_bin <- length(u) <= 2 && all(u %in% c(0,1))
-  if (use_relative && !is_bin) {
-    mu <- mean(y, na.rm = TRUE)
-    if (!is.finite(mu) || mu == 0) stop("Mean fitness not finite/zero; cannot compute relative fitness.")
-    y <- y / mu
+  
+  # extract variables and coerce to numeric
+  y  <- as.numeric(data[[fitness_col]])
+  x1 <- as.numeric(data[[trait_cols[1]]])
+  x2 <- as.numeric(data[[trait_cols[2]]])
+  
+  if(any(!is.numeric(y)) || any(!is.numeric(x1)) || any(!is.numeric(x2))) {
+    stop("Non-numeric values detected in fitness or trait columns")
   }
-
-  # enforce storage mode (some matrix ops are picky)
-  storage.mode(x1) <- "double"
-  storage.mode(x2) <- "double"
-  storage.mode(y)  <- "double"
-
-  ok2 <- is.finite(x1) & is.finite(x2) & is.finite(y)
-  x1 <- x1[ok2]; x2 <- x2[ok2]; y <- y[ok2]
-  if (!length(y)) stop("No finite observations after filtering.")
-
-  X <- cbind(x1, x2)
-  colnames(X) <- trait_cols
-  storage.mode(X) <- "double"
-
-  fit <- tryCatch(
-    fields::Tps(X, y),
-    error = function(e) {
-      stop("fields::Tps failed (likely during internal scaling). ",
-           "Ensure inputs are numeric doubles. Underlying error: ", conditionMessage(e))
-    }
-  )
-
-  x1_seq <- seq(min(x1), max(x1), length.out = grid_n)
-  x2_seq <- seq(min(x2), max(x2), length.out = grid_n)
+  
+  # remove incomplete cases 
+  keep <- stats::complete.cases(y, x1, x2)
+  y  <- y[keep]; x1 <- x1[keep]; x2 <- x2[keep]
+  
+  if (length(y) < 10) stop("Too few complete cases: ", length(y), " (<10)")
+  
+  # detect binary fitness 
+  uniq_y <- unique(y)
+  is_binary <- length(uniq_y) == 2 && all(sort(uniq_y) == c(0, 1))
+  
+  if (method == "auto") {
+    method <- if (is_binary) "gam" else "tps"
+  }
+  
+  if (!method %in% c("gam", "tps")) stop("method must be 'auto' | 'gam' | 'tps'")
+  
+  # check trait variation 
+  if (length(unique(x1)) < 3 || length(unique(x2)) < 3) {
+    stop("Too few unique trait values: ",
+         trait_cols[1], " has ", length(unique(x1)),
+         " unique values; ", trait_cols[2], " has ", length(unique(x2)), " unique values.")
+  }
+  
+  cat("Data type:", ifelse(is_binary, "binary", "continuous"), "\n")
+  cat("Selected method:", method, "\n")
+  cat("Data points:", length(y), "\n")
+  
+  # optional trait standarization 
+  scaler <- list(m1 = mean(x1), s1 = stats::sd(x1), m2 = mean(x2), s2 = stats::sd(x2))
+  
+  if (!is.finite(scaler$s1) || scaler$s1 == 0) scaler$s1 <- 1
+  if (!is.finite(scaler$s2) || scaler$s2 == 0) scaler$s2 <- 1
+  
+  x1s <- if (scale_traits) (x1 - scaler$m1)/scaler$s1 else x1
+  x2s <- if (scale_traits) (x2 - scaler$m2)/scaler$s2 else x2
+  
+  # construct prediction grid in original trait space 
+  g1 <- seq(min(x1, na.rm = TRUE), max(x1, na.rm = TRUE), length.out = grid_n)
+  g2 <- seq(min(x2, na.rm = TRUE), max(x2, na.rm = TRUE), length.out = grid_n)
+  
   grid <- expand.grid(
-    setNames(list(x1_seq), trait_cols[1]),
-    setNames(list(x2_seq), trait_cols[2])
+    g1, g2,
+    KEEP.OUT.ATTRS = FALSE
   )
-  # as.matrix to ensure numeric; some R builds keep data.frame class attributes
-  Z <- as.matrix(grid)
-  storage.mode(Z) <- "double"
+  
+  names(grid) <- trait_cols
+  
+  # scale grid values for prediction if traits were standardized 
+  grid_scaled <- grid
+  
+  if (scale_traits) {
+    grid_scaled[[trait_cols[1]]] <- (grid[[trait_cols[1]]] - scaler$m1)/scaler$s1
+    grid_scaled[[trait_cols[2]]] <- (grid[[trait_cols[2]]] - scaler$m2)/scaler$s2
+  }
+  
+ 
+  if (method == "gam") {
+    
+    if (!requireNamespace("mgcv", quietly = TRUE)) {
+      stop("mgcv package required. Please install.packages('mgcv')")
+    }
+    
+    
+    if(any(!is.numeric(y)) || any(!is.numeric(x1s)) || any(!is.numeric(x2s))) {
+      stop("Non-numeric values in GAM fitting data")
+    }
+    
+    fam <- if (is_binary) stats::binomial("logit") else stats::gaussian()
+    
 
-  zhat <- tryCatch(
-    stats::predict(fit, Z),
+    df_fit <- data.frame(
+      .y = as.numeric(y),
+      .x1 = as.numeric(x1s),
+      .x2 = as.numeric(x2s)
+    )
+    
+
+    df_fit <- df_fit[complete.cases(df_fit), ]
+    
+    cat("GAM fitting with", nrow(df_fit), "observations\n")
+    
+    # try different GAM formulas 
+    try_formulas <- list(
+
+      main = .y ~ s(.x1, .x2, bs = "tp", k = min(k, nrow(df_fit)-1)),
+
+      alt1 = .y ~ s(.x1, k = min(floor(k/2), nrow(df_fit)-1)) + s(.x2, k = min(floor(k/2), nrow(df_fit)-1)),
+
+      alt2 = .y ~ .x1 + .x2
+    )
+    
+    fit <- NULL
+    formula_used <- NULL
+    
+    for (form_name in names(try_formulas)) {
+      if (is.null(fit)) {
+        tryCatch({
+          cat("  Trying formula:", form_name, "\n")
+          fit <- mgcv::gam(try_formulas[[form_name]], 
+                           data = df_fit, 
+                           family = fam, 
+                           method = "REML")
+          formula_used <- form_name
+          cat("Success with formula:", form_name, "\n")
+          break
+        }, error = function(e) {
+          cat("ailed with formula", form_name, ":", e$message, "\n")
+        })
+      }
+    }
+    
+    if (is.null(fit)) {
+      stop("All GAM formula attempts failed")
+    }
+    
+    # predict on grid 
+    newdat <- data.frame(
+      .x1 = as.numeric(grid_scaled[[trait_cols[1]]]),
+      .x2 = as.numeric(grid_scaled[[trait_cols[2]]])
+    )
+    
+    .fit <- tryCatch({
+      as.numeric(stats::predict(fit, newdata = newdat, type = "response"))
+    }, error = function(e) {
+      cat("Prediction failed, using mean:", e$message, "\n")
+      rep(mean(y, na.rm = TRUE), nrow(newdat))
+    })
+    
+    grid$.fit <- .fit
+    
+    if (anyNA(grid$.fit)) {
+      warning("NA predictions detected, using mean imputation")
+      grid$.fit[is.na(grid$.fit)] <- mean(grid$.fit, na.rm = TRUE)
+    }
+    
+    cat("Success Predictions range:", round(range(grid$.fit), 4), "\n")
+    return(list(
+      model = fit,
+      grid = grid,
+      method = "gam",
+      formula_used = formula_used,
+      data_type = ifelse(is_binary, "binary", "continuous"),
+      trait_cols = trait_cols,
+      fitness_col = fitness_col
+    ))
+  }
+  
+  # method == "tps"
+  if (!requireNamespace("fields", quietly = TRUE)) {
+    stop("For continuous fitness with tps method, install fields: install.packages('fields')")
+  }
+  
+  if (is_binary) {
+    warning("Binary data detected but method='tps' chosen. Using Tps on binary outcomes (not ideal).")
+  }
+  
+  Xs <- cbind(as.numeric(x1s), as.numeric(x2s))
+  
+  tps_model <- tryCatch(
+    fields::Tps(Xs, as.numeric(y)),
     error = function(e) {
-      stop("predict(Tps, ...) failed. Underlying error: ", conditionMessage(e))
+      warning("Tps failed, retrying with m=2: ", e$message)
+      fields::Tps(Xs, as.numeric(y), m = 2)
     }
   )
-  grid$.fit <- as.numeric(zhat)
+  
+  grid_scaled_mat <- cbind(
+    as.numeric(grid_scaled[[trait_cols[1]]]),
+    as.numeric(grid_scaled[[trait_cols[2]]])
+  )
+  
+  .fit <- as.numeric(stats::predict(tps_model, grid_scaled_mat))
+  grid$.fit <- .fit
+  
+  if (anyNA(grid$.fit)) {
+    warning("NA predictions, using mean imputation")
+    grid$.fit[is.na(grid$.fit)] <- mean(grid$.fit, na.rm = TRUE)
+  }
+  
 
-  list(model = fit, grid = grid)
+  return(list(
+    model = tps_model,
+    grid = grid,
+    method = "tps",
+    data_type = ifelse(is_binary, "binary", "continuous"),
+    trait_cols = trait_cols,
+    fitness_col = fitness_col
+  ))
 }

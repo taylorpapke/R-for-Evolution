@@ -1,0 +1,18 @@
+BINARY TPS METHODS COMPARISON - QUICK SUMMARY
+Generated: 20251018_200237 
+
+PERFORMANCE RANKING (by Brier Score):
+1. gam_tp (Brier: 0.0027, LogLoss: 0.666, AUC: 0.915, Time: 0.2s)
+2. gam_te (Brier: 0.0028, LogLoss: 0.6664, AUC: 0.918, Time: 0.22s)
+3. gam_ad (Brier: 0.0034, LogLoss: 0.6674, AUC: 0.9, Time: 59.22s)
+4. local_likelihood (Brier: 0.0039, LogLoss: 0.67, AUC: 0.93, Time: 0.05s)
+5. empirical_tps (Brier: 0.0043, LogLoss: 0.6692, AUC: 0.885, Time: 0.28s)
+6. glm (Brier: 0.0078, LogLoss: 0.6765, AUC: 0.74, Time: 0.01s)
+
+BEST METHOD: gam_tp 
+WORST METHOD: glm 
+
+KEY CONCLUSIONS:
+- Lower Brier Score and Log Loss = Better
+- Higher AUC = Better discrimination
+- All methods use proper binomial likelihood (no direct TPS on binary data)

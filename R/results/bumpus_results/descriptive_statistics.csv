@@ -1,0 +1,3 @@
+"Status","n","mean_humerus","sd_humerus","min_humerus","max_humerus"
+"Perished",24,0.727916666666667,0.0235425916837634,0.659,0.765
+"Survived",35,0.738,0.0198390583267986,0.687,0.78

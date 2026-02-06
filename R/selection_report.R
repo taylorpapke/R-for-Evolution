@@ -1,26 +1,4 @@
-#' Full Selection Report: Coefficients (+Variance) and Plots
-#'
-#' Computes linear, quadratic (gamma_ii), and correlational (gamma_ij) coefficients
-#' with SE, p-values, and Variance; generates standardized univariate GAM splines
-#' and thin-plate spline correlational surfaces.
-#'
-#' @param data data.frame
-#' @param fitness_col character, name of fitness column
-#' @param trait_cols character vector, names of trait columns (>=1)
-#' @param fitness_type "binary" or "continuous"
-#' @param standardize logical; z-score traits via prepare_selection_data (default TRUE)
-#' @param spline_k integer; basis dimension for univariate GAM splines
-#' @param bins integer; number of filled contour bins for correlational surface
-#' @param save_dir optional character; if provided, ggsave all plots there (PNG)
-#'
-#' @return list with:
-#'   - table: tidy data.frame (Term, Type, Beta_Coefficient, Standard_Error, P_Value, Variance)
-#'   - uni_models: named list of GAM models (per trait)
-#'   - uni_plots:  named list of ggplot objects (per trait)
-#'   - tps_models: named list of TPS models (per trait pair)
-#'   - tps_plots:  named list of ggplot objects (per trait pair)
-#'   - prepared_data: standardized data (and relative_fitness if applicable)
-#' @export
+
 selection_report <- function(data, fitness_col, trait_cols,
                              fitness_type = c("binary","continuous"),
                              standardize = TRUE,
