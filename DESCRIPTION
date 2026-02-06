@@ -1,0 +1,17 @@
+Package: lande
+Title: Automated Lande-Arnold Selection Analysis
+Version: 0.1.0
+Authors@R: person("Taylor", "Papke", role = c("aut", "cre"), email = "your@email.com")
+Description: A modular toolkit for standardizing phenotypes, calculating 
+    selection gradients, and visualizing fitness landscapes.
+License: MIT
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.3
+Imports: 
+    car,
+    mgcv,
+    fields,
+    ggplot2,
+    stats
+
