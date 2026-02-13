@@ -1,3 +1,11 @@
+# ---- Packages ----
+if (!requireNamespace("ggplot2", quietly = TRUE)) install.packages("ggplot2")
+library(ggplot2)
+# Ensure other likely dependencies are loaded if needed by the sourced functions
+for (pkg in c("mgcv", "fields", "dplyr", "tidyr")) {
+  if (requireNamespace(pkg, quietly = TRUE)) library(pkg, character.only = TRUE)
+}
+
 cat("1. Loading all function files...\n")
 function_files <- c(
   "prepare_selection_data.R", 
@@ -18,8 +26,11 @@ for (file in function_files) {
   if (file.exists(file)) {
     source(file)
     cat("Loaded:", file, "\n")
+  } else if (file.exists(file.path("..", file))) {
+    source(file.path("..", file))
+    cat("Loaded:", file.path("..", file), "\n")
   } else {
-    cat("ile not found:", file, "\n")
+    cat("File not found:", file, "\n")
   }
 }
 
@@ -124,7 +135,6 @@ tps_result <- correlational_tps(
   data = df_continuous,
   fitness_col = "fitness",
   trait_cols = c("size", "speed"),
-  use_relative = TRUE,
   grid_n = 30
 )
 
@@ -288,7 +298,6 @@ for (traits in trait_combinations) {
     data = df_continuous,
     fitness_col = "fitness",
     trait_cols = traits,
-    use_relative = TRUE,
     grid_n = 30
   )
   
@@ -312,7 +321,6 @@ for (traits in trait_combinations[1:2]) {
     data = df_binary,
     fitness_col = "fitness",
     trait_cols = traits,
-    use_relative = FALSE,
     grid_n = 25
   )
   
@@ -361,10 +369,10 @@ validate_plot <- function(plot, plot_name) {
   )
   
   if (all(checks)) {
-    cat(lot_name, "PASS\n")
+    cat(plot_name, "PASS\n")
     return(TRUE)
   } else {
-    cat(lot_name, "FAIL - Issues:", paste(names(checks)[!checks], collapse = ", "), "\n")
+    cat(plot_name, "FAIL - Issues:", paste(names(checks)[!checks], collapse = ", "), "\n")
     return(FALSE)
   }
 }
@@ -394,6 +402,10 @@ cat("Correlation plots:", length(correlation_plots), "\n")
 
 
 cat("\n11. Updated final summary...\n")
+
+# Calculate passed and total based on the 'results' list from Section 5
+total <- length(results)
+passed <- sum(grepl("^pass", unlist(results)))
 
 cat("Functions tested:", length(function_files), "\n")
 cat("Tests passed:", passed, "/", total, "\n")
