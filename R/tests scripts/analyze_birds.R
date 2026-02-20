@@ -1,49 +1,20 @@
-
 ## 1. SET WORKING DIRECTORY AND LOAD DATA -------------------------------------
 
+cat("Current working directory:", getwd(), "\n")
 
-setwd("E:/OMSCS/CS8903_Research/R_for_evolution/R-for-Evolution/R")
-cat("Working directory:", getwd(), "\n")
+# Go up one level from /test scripts and into /test_data
+data_path <- "../test_data/bird_data.csv"
 
-
-if (file.exists("bird.data.RData")) {
-  load("bird.data.RData")
-  cat("bird.data.RData loaded\n")
+if (file.exists(data_path)) {
+  bird_study <- read.csv(data_path, stringsAsFactors = FALSE)
+  cat("bird_data.csv loaded\n")
 } else {
-  possible_files <- c("bird.data.RData", "bird_study.RData",
-                      "finch_data.RData", "bird_data.RData", "data.RData")
-  data_loaded <- FALSE
-  
-  for (file in possible_files) {
-    if (file.exists(file)) {
-      load(file)
-      cat("pass", file, "loaded\n")
-      data_loaded <- TRUE
-      break
-    }
-  }
-  
-  if (!data_loaded) {
-    stop("No bird data file found. Please ensure the data file is in the working directory.")
-  }
+  stop("bird_data.csv not found.")
 }
 
-cat("Objects in environment:\n")
-print(ls())
+# Remove duplicate X.y.* columns
+bird_study <- bird_study[, !grepl("^X\\.y\\.", names(bird_study))]
 
-
-data_objects <- ls()[sapply(ls(), function(x) {
-  obj <- get(x)
-  is.data.frame(obj) &&
-    any(grepl("PC1|beak|MedianBeak|y\\.|fitness|year", names(obj), ignore.case = TRUE))
-})]
-
-if (length(data_objects) == 0) {
-  stop("No suitable bird data frame found. Please check your data file.")
-}
-
-bird_study <- get(data_objects[1])
-cat("Using data object:", data_objects[1], "\n")
 cat("Data dimensions:", dim(bird_study), "\n")
 cat("Column names:\n")
 print(names(bird_study))
@@ -98,8 +69,10 @@ function_files <- c(
 )
 
 for (file in function_files) {
-  if (file.exists(file)) {
-    source(file)
+  file_path <- paste0("../", file)
+
+  if (file.exists(file_path)) {
+    source(file_path)
     cat("pass", file, "\n")
   } else {
     cat("failed", file, "NOT FOUND\n")
@@ -209,6 +182,27 @@ main_data_prepared <- prepare_selection_data(
 
 ## 6.1 SINGLE-TRAIT SELECTION ANALYSIS ----------------------------------------
 
+# Helper for single-trait fallback (since selection_coefficients requires >=2 traits)
+run_manual_single_trait <- function(data, fitness_col, trait_col) {
+  df <- data
+  # Simple standardization
+  df[[trait_col]] <- as.numeric(scale(df[[trait_col]]))
+  
+  # Fit GLM with quadratic term
+  form <- as.formula(paste(fitness_col, "~", trait_col, "+ I(", trait_col, "^2)"))
+  m <- glm(form, data = df, family = binomial)
+  
+  coefs <- summary(m)$coefficients
+  # Return formatted like selection_coefficients
+  data.frame(
+    Term = c(trait_col, paste0(trait_col, "^2")),
+    Type = c("Linear", "Quadratic"),
+    Beta_Coefficient = coefs[2:3, 1],
+    Standard_Error = coefs[2:3, 2],
+    P_Value = coefs[2:3, 4]
+  )
+}
+
 cat("Testing", beak_trait, "(single trait)...\n")
 
 single_beak <- NULL
@@ -224,6 +218,11 @@ tryCatch({
   print(single_beak)
 }, error = function(e) {
   cat("Single-trait analysis failed:", e$message, "\n")
+  if (grepl("requires at least 2 traits", e$message)) {
+    cat("-> Attempting manual GLM fallback for single trait...\n")
+    single_beak <<- run_manual_single_trait(main_data, "fitness", beak_trait)
+    print(single_beak)
+  }
 })
 
 ## 6.2 MULTI-TRAIT SELECTION ANALYSIS -----------------------------------------
@@ -387,8 +386,12 @@ tryCatch({
     seed = 42
   )
   cat("Bootstrap completed\n")
-  cat("CI:", round(bootstrap_result$ci$lower[1], 3), "to",
-      round(bootstrap_result$ci$upper[1], 3), "\n")
+  if (!is.null(bootstrap_result) && is.numeric(bootstrap_result$ci$lower)) {
+    cat("CI:", round(bootstrap_result$ci$lower[1], 3), "to",
+        round(bootstrap_result$ci$upper[1], 3), "\n")
+  } else {
+    cat("Bootstrap CI not available (likely due to single-trait limitation).\n")
+  }
 }, error = function(e) {
   cat("Bootstrap failed:", e$message, "\n")
 })
@@ -403,6 +406,11 @@ for (year in available_years) {
   cat("Year", year, "...")
   year_data <- prepare_basic_survival_data(year)
   
+  if (var(year_data$fitness, na.rm = TRUE) == 0) {
+    cat("Skipping (No variation in fitness)\n")
+    next
+  }
+  
   if (!is.null(year_data) && nrow(year_data) >= 20) {
     
     beak_trait_year <- if ("Beak_PC1" %in% names(year_data)) "Beak_PC1" else "PC1"
@@ -411,14 +419,22 @@ for (year in available_years) {
       next
     }
     
+    year_result <- NULL
     tryCatch({
       year_result <- selection_coefficients(
         data = year_data,
         fitness_col = "fitness",
         trait_cols = beak_trait_year,
         fitness_type = "binary",
-        standardize = TRUE
+        standardize = TRUE 
       )
+    }, error = function(e) {
+      if (grepl("requires at least 2 traits", e$message)) {
+        year_result <<- run_manual_single_trait(year_data, "fitness", beak_trait_year)
+      }
+    })
+
+    if (!is.null(year_result)) {
       
       quad_coef <- year_result %>%
         dplyr::filter(Type == "Quadratic" & grepl(beak_trait_year, Term))
@@ -440,9 +456,7 @@ for (year in available_years) {
       } else {
         cat("No quadratic coefficient\n")
       }
-    }, error = function(e) {
-      cat("Error:", e$message, "\n")
-    })
+    }
   } else {
     cat("Insufficient data\n")
   }
@@ -455,15 +469,14 @@ if (length(yearly_results) > 0) {
   
   if (nrow(yearly_summary) > 1) {
     temporal_plot <- ggplot(yearly_summary,
-                            aes(x = Year, y = Quadratic_Coefficient,
-                                color = Significant, size = Sample_Size)) +
-      geom_point() +
+                            aes(x = Year, y = Quadratic_Coefficient, color = Significant)) +
+      geom_point(aes(size = Sample_Size)) +
       geom_line(alpha = 0.5) +
       geom_hline(yintercept = 0, linetype = "dashed", color = "gray") +
       labs(
         title = "Temporal Variation in Disruptive Selection",
         subtitle = paste("Quadratic Selection on Beak Axis (", beak_trait, ") Across Years", sep = ""),
-        y = "Quadratic Selection Coefficient (single-trait β₂)",
+        y = "Quadratic Selection Coefficient (single-trait beta2)",
         color = "Statistically\nSignificant",
         size = "Sample Size"
       ) +
