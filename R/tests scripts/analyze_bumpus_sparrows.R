@@ -25,6 +25,10 @@ for (file in core_function_files) {
     source(file)
     loaded_files <- c(loaded_files, file)
     cat("Loaded:", file, "\n")
+  } else if (file.exists(file.path("..", file))) {
+    source(file.path("..", file))
+    loaded_files <- c(loaded_files, file)
+    cat("Loaded:", file.path("..", file), "\n")
   } else {
     cat("File not found:", file, "\n")
   }
@@ -165,25 +169,19 @@ save_overlays <- function(data_df, tps_results, pairs, out_dir,
 
 
 cat("\n2. Loading Bumpus data...\n")
-bumpus <- tryCatch({
-  utils::read.table(
-    "http://www.stat.uchicago.edu/~yibi/s226/Bumpus.txt",
-    header = TRUE
-  )
-}, error = function(e) {
-  cat("Cannot load from URL, trying local file...\n")
-  if (file.exists("sparrow.csv")) {
-    data <- utils::read.csv("sparrow.csv")
-    if ("Humerus" %in% names(data)) data$HL <- data$Humerus
-    if ("Total_length" %in% names(data)) data$TL <- data$Total_length
-    if ("Weight" %in% names(data)) data$WT <- data$Weight
-    if ("Keel_length" %in% names(data)) data$KL <- data$Keel_length
-    data
-  } else {
-    stop("Cannot load Bumpus data")
-  }
-})
-bumpus$Survived <- as.numeric(bumpus$Status == "Survived")
+data_path <- "../test_data/Bumpus_data.csv"
+if (!file.exists(data_path)) {
+  # Fallback if running from project root
+  data_path <- "test_data/Bumpus_data.csv"
+}
+if (!file.exists(data_path)) stop("Cannot find Bumpus_data.csv")
+
+bumpus <- utils::read.csv(data_path)
+bumpus$Survived <- as.numeric(bumpus$surv == "alive")
+bumpus$TL <- bumpus$totlen
+bumpus$HL <- bumpus$humer
+bumpus$WT <- bumpus$wgt
+bumpus$KL <- bumpus$stern
 cat("Bumpus data loaded:", paste(dim(bumpus), collapse = " x "), "\n")
 cat("Survival rate:", mean(bumpus$Survived), "\n")
 cat("Columns:", paste(names(bumpus), collapse = ", "), "\n")
