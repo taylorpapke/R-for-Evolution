@@ -11,6 +11,11 @@ selection_coefficients <- function(data, fitness_col, trait_cols,
   
   fitness_type <- match.arg(fitness_type)
   
+  # 3 decide which fitness column to model 
+  # binary fitness must always be on absolute values 0 or 1 
+  # continuous fitness may use relative fitness 
+  rel_col <- paste0(fitness_col, "_relative")
+
   # 1 prepare data
   df <- prepare_selection_data(
     data          = data,
@@ -18,7 +23,8 @@ selection_coefficients <- function(data, fitness_col, trait_cols,
     trait_cols    = trait_cols,
     standardize   = standardize,
     add_relative  = TRUE,   
-    na_action     = "warn"
+    na_action     = "warn",
+    name_relative = rel_col
   )
   
   # 2 detect family if auto
@@ -27,11 +33,6 @@ selection_coefficients <- function(data, fitness_col, trait_cols,
     fitness_type <- det$type
   }
   family_obj <- if (fitness_type == "binary") binomial("logit") else gaussian()
-  
-  # 3 decide which fitness column to model 
-  # binary fitness must always be on absolute values 0 or 1 
-  # continuous fitness may use relative fitness 
-  rel_col <- paste0(fitness_col, "relative")
   
   model_fitness_col <-
     if (fitness_type == "binary") {
@@ -84,3 +85,4 @@ selection_coefficients <- function(data, fitness_col, trait_cols,
   
   return(all_coefs)
 }
+
