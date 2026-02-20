@@ -1,4 +1,3 @@
-
 cat("=== EXTENDED PARAMETER AND BOUNDARY TESTING ===\n\n")
 
 # 1) Load all functions
@@ -11,7 +10,15 @@ function_files <- c(
 )
 
 for (file in function_files) {
-  if (file.exists(file)) source(file)
+  if (file.exists(file)) {
+    source(file)
+    cat("Loaded:", file, "\n")
+  } else if (file.exists(file.path("..", file))) {
+    source(file.path("..", file))
+    cat("Loaded:", file.path("..", file), "\n")
+  } else {
+    cat("Warning: File not found:", file, "\n")
+  }
 }
 
 # 2) Create diverse test datasets
@@ -107,7 +114,7 @@ test_selection_combinations <- function() {
         error = e$message,
         success = FALSE
       )
-      cat("ailed:", e$message, "\n")
+      cat("Failed:", e$message, "\n")
     })
   }
   
@@ -271,10 +278,10 @@ generate_extended_report <- function(selection_results, boundary_results, spline
   
   # Compute success rate
   success_count <- sum(c(
-    sum(sapply(selection_results$results, function(x) x$success)),
-    sum(sapply(boundary_results$tests, function(x) x$success)),
-    sum(sapply(spline_results$tests, function(x) x$success)),
-    sum(sapply(bootstrap_results$tests, function(x) x$success))
+    sum(vapply(selection_results$results, function(x) x$success, logical(1))),
+    sum(vapply(boundary_results$tests, function(x) x$success, logical(1))),
+    sum(vapply(spline_results$tests, function(x) x$success, logical(1))),
+    sum(vapply(bootstrap_results$tests, function(x) x$success, logical(1)))
   ))
   
   success_rate <- round(success_count / total_tests * 100, 1)
