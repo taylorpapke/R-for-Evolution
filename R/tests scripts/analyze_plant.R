@@ -68,7 +68,11 @@ function_files <- c(
   "univariate_spline.R",
   "univariate_surface.R",
   "correlational_tps.R",
-  "correlation_surface.R"
+  "correlation_surface.R",
+  "detect_family.R",
+  "analyze_linear_selection.R",
+  "analyze_nonlinear_selection.R",
+  "extract_results.R"
 )
 
 for (f in function_files) {
