@@ -13,7 +13,28 @@ if (!dir.exists(results_dir)) {
 cat("\n2. LOADING DATA AND FUNCTIONS...\n")
 
 # Load Crescent Pond puppyfish dataset
-crescent_path <- "E:/OMSCS/CS8903_Research/R_for_evolution - Copy/R-for-Evolution/R/Crescent+Pond+-+size-corrected+trait+data+++survival+++growth+++d13C+++d15N.csv"
+data_dir <- file.path("..", "test_data")
+crescent_path <- NULL
+
+# Try exact filenames (URL-encoded and standard)
+possible_names <- c(
+  "Crescent+Pond+-+size-corrected+trait+data+++survival+++growth+++d13C+++d15N.csv",
+  "Crescent Pond - size-corrected trait data + survival + growth + d13C + d15N.csv"
+)
+
+for (f in possible_names) {
+  p <- file.path(data_dir, f)
+  if (file.exists(p)) { crescent_path <- p; break }
+}
+
+# Fallback: fuzzy search in the data directory if not found
+if (is.null(crescent_path) && dir.exists(data_dir)) {
+  candidates <- list.files(data_dir, pattern = "Crescent.*Pond.*\\.csv$", full.names = TRUE)
+  if (length(candidates) > 0) crescent_path <- candidates[1]
+}
+
+if (is.null(crescent_path) || !file.exists(crescent_path)) stop("Data file 'Crescent Pond...' not found in 'R/test_data/' directory.")
+cat("   Using data file:", crescent_path, "\n")
 crescent_data <- read.csv(crescent_path)
 
 # Define fitness variables and trait set
@@ -34,11 +55,24 @@ function_files <- c(
   "correlational_tps.R", "correlation_surface.R"
 )
 
-for (file in function_files) {
-  if (file.exists(file)) {
-    source(file)
-    cat("   Loaded:", file, "\n")
+for (func_file in function_files) {
+  file_path <- file.path("..", func_file)
+  if (file.exists(file_path)) {
+    source(file_path)
+    cat("   Loaded:", func_file, "\n")
   }
+}
+
+## 2.1 Load required packages ------------------------------------------------
+cat("   2.1 LOADING PACKAGES...\n")
+
+required_packages <- c("ggplot2", "mgcv") # ggplot2 for plotting, mgcv for splines
+for (pkg in required_packages) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    install.packages(pkg)
+  }
+  library(pkg, character.only = TRUE)
+  cat("   Loaded:", pkg, "\n")
 }
 
 ## 3. Run analyses and record results ----------------------------------------
