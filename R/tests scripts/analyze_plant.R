@@ -1,223 +1,241 @@
-###############################################################################
-# FULL FUNCTION TEST AND RESULTS ARCHIVING SCRIPT
-#
-# Runs the complete analysis pipeline:
-#   - data preparation
-#   - selection coefficient estimation
-#   - univariate fitness surfaces
-#   - bivariate (correlational) fitness surfaces
-#
-# All results and figures are saved to disk.
-###############################################################################
+# =============================================================================
+# PART 1: SETUP AND INITIALIZATION
+# =============================================================================
 
-## ---- Configuration ---------------------------------------------------------
-verbose_output <- TRUE
-save_plots     <- TRUE
-save_workspace <- TRUE
+cat("1. Working directory and package initialization\n")
+cat("Current working directory:", getwd(), "\n")
 
-log_msg <- function(...) {
-  if (verbose_output) cat(...)
+required_packages <- c(
+  "dplyr", "tidyr", "ggplot2", "mgcv", "fields",
+  "purrr", "patchwork", "viridis", "scales", "knitr"
+)
+
+for (pkg in required_packages) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    install.packages(pkg)
+  }
+  library(pkg, character.only = TRUE)
+  cat("Loaded package:", pkg, "\n")
 }
 
-## ---- 1. Output directory ---------------------------------------------------
-log_msg("1. Setting up output directory...\n")
-
-results_dir <- "function_test_results"
-if (!dir.exists(results_dir)) {
-  dir.create(results_dir, recursive = TRUE)
-  log_msg("   Created output directory: ", results_dir, "\n")
-} else {
-  log_msg("   Using existing output directory: ", results_dir, "\n")
-}
-
-## ---- 2. Load packages ------------------------------------------------------
-log_msg("\n2. Loading required packages...\n")
-
-if (!requireNamespace("ggplot2", quietly = TRUE))
-  stop("Package 'ggplot2' is required.")
-
-library(ggplot2)
-
-if (!requireNamespace("mgcv", quietly = TRUE))
-  log_msg("   Package 'mgcv' not installed (needed for GAM-based surfaces)\n")
-
-if (!requireNamespace("fields", quietly = TRUE))
-  log_msg("   Package 'fields' not installed (needed for TPS surfaces)\n")
-
-## ---- 3. Load data ----------------------------------------------------------
-log_msg("\n3. Loading Crescent Pond puppyfish data...\n")
-
-crescent_path <- "E:/OMSCS/CS8903_Research/R_for_evolution - Copy/R-for-Evolution/R/Crescent+Pond+-+size-corrected+trait+data+++survival+++growth+++d13C+++d15N.csv"
-crescent_data <- read.csv(crescent_path)
-
-fitness_binary     <- "survival"
-fitness_continuous <- "ln.growth"
-traits <- c("jaw", "eye", "body", "nasal", "mouth", "SL")
-
-test_data <- crescent_data[, c(fitness_binary, fitness_continuous, traits)]
-test_data <- test_data[complete.cases(test_data), ]
-
-log_msg("   Observations used: ", nrow(test_data), "\n")
-
-## ---- 4. Load analysis functions -------------------------------------------
-log_msg("\n4. Loading analysis functions...\n")
+cat("\n2. Loading selection analysis functions\n")
 
 function_files <- c(
   "prepare_selection_data.R",
+  "analyze_linear_selection.R",
+  "analyze_nonlinear_selection.R",
+  "extract_results.R",
   "selection_coefficients.R",
+  "detect_family.R",
+  "selection_differential.R",
   "univariate_spline.R",
   "univariate_surface.R",
   "correlational_tps.R",
   "correlation_surface.R",
-  "detect_family.R",
-  "analyze_linear_selection.R",
-  "analyze_nonlinear_selection.R",
-  "extract_results.R"
+  "bootstrap_selection.R"
 )
 
 for (f in function_files) {
-  if (!file.exists(f)) stop("Missing function file: ", f)
-  source(f)
-  log_msg("   Loaded: ", f, "\n")
-}
-
-## ---- 5. Initialize results container --------------------------------------
-all_results <- list(
-  metadata = list(
-    date = Sys.time(),
-    data_source = "Crescent Pond puppyfish",
-    n = nrow(test_data),
-    traits = traits
-  ),
-  preparation = list(),
-  selection = list(),
-  surfaces = list()
-)
-
-## ---- 6. Data preparation ---------------------------------------------------
-log_msg("\n5. Preparing data...\n")
-
-prep_binary <- prepare_selection_data(
-  data = test_data,
-  fitness_col = fitness_binary,
-  trait_cols = traits,
-  standardize = TRUE
-)
-
-prep_continuous <- prepare_selection_data(
-  data = test_data,
-  fitness_col = fitness_continuous,
-  trait_cols = traits,
-  standardize = TRUE
-)
-
-all_results$preparation$binary     <- dim(prep_binary)
-all_results$preparation$continuous <- dim(prep_continuous)
-
-## ---- 7. Selection coefficient analysis ------------------------------------
-log_msg("\n6. Estimating selection coefficients...\n")
-
-sel_binary <- selection_coefficients(
-  data = prep_binary,
-  fitness_col = fitness_binary,
-  trait_cols = traits,
-  fitness_type = "binary",
-  standardize = FALSE
-)
-
-sel_continuous <- selection_coefficients(
-  data = prep_continuous,
-  fitness_col = fitness_continuous,
-  trait_cols = traits,
-  fitness_type = "continuous",
-  standardize = FALSE
-)
-
-all_results$selection$binary     <- sel_binary
-all_results$selection$continuous <- sel_continuous
-
-## ---- 8. Univariate fitness surfaces ---------------------------------------
-log_msg("\n7. Estimating univariate fitness surfaces...\n")
-
-uni_surfaces <- list()
-
-for (trait in traits[1:3]) {
-  uni <- univariate_spline(
-    data = prep_binary,
-    fitness_col = fitness_binary,
-    trait_col = trait,
-    fitness_type = "binary",
-    k = 6
-  )
-  
-  uni_surfaces[[trait]] <- uni
-  
-  if (save_plots) {
-    p <- univariate_surface(uni, trait_col = trait) +
-      ggtitle(paste("Fitness vs", trait))
-    ggsave(
-      filename = file.path(results_dir, paste0("univariate_", trait, ".png")),
-      plot = p,
-      width = 8,
-      height = 6,
-      dpi = 300
-    )
+  if (file.exists(f)) {
+    source(f)
+    cat("Sourced:", f, "\n")
+  } else {
+    cat("File not found:", f, "\n")
   }
 }
 
-all_results$surfaces$univariate <- names(uni_surfaces)
+# =============================================================================
+# PART 2: DATA LOADING AND EXPLORATION
+# =============================================================================
 
-## ---- 9. Bivariate (correlational) fitness surface --------------------------
-log_msg("\n8. Estimating bivariate fitness surface...\n")
+cat("\n3. Data loading and exploration\n")
 
-trait_pair <- traits[1:2]
-
-tps <- correlational_tps(
-  data = prep_binary,
-  fitness_col = fitness_binary,
-  trait_cols = trait_pair,
-  method = "auto",
-  grid_n = 25
+data_files <- list(
+  data1 = "Aster_analyses_2011_Cohort.txt",
+  data2 = "Aster_analyses_2012_Cohort_full.txt",
+  data3 = "Aster_analyses_2011_Cohort_full.txt",
+  data4 = "Aster_analyses_2012_Cohort.txt"
 )
 
-all_results$surfaces$correlational <- list(
-  traits = trait_pair,
-  grid_dim = dim(tps$grid)
+data1 <- read.delim(data_files$data1, sep = "\t")
+data2 <- read.delim(data_files$data2, sep = "\t")
+data3 <- read.delim(data_files$data3, sep = "\t")
+data4 <- read.delim(data_files$data4, sep = "\t")
+
+cat("2011 Cohort:", dim(data1)[1], "rows,", dim(data1)[2], "columns\n")
+cat("2012 Full:", dim(data2)[1], "rows,", dim(data2)[2], "columns\n")
+cat("2011 Full:", dim(data3)[1], "rows,", dim(data3)[2], "columns\n")
+cat("2012 Cohort:", dim(data4)[1], "rows,", dim(data4)[2], "columns\n")
+
+# =============================================================================
+# PART 3: DATA PREPARATION
+# =============================================================================
+
+cat("\n4. Data preparation\n")
+
+c13_col <- grep("c13|deltaC13", names(data3), ignore.case = TRUE, value = TRUE)[1]
+
+traits_2011 <- data3 %>%
+  select(geno, elevation, season, SLA, !!c13_col, FDsnow, height) %>%
+  rename(deltaC13 = !!c13_col) %>%
+  distinct(geno, season, .keep_all = TRUE)
+
+fitness_2011 <- data1 %>%
+  select(geno, season, varb, resp) %>%
+  filter(!is.na(resp))
+
+fitness_wide <- fitness_2011 %>%
+  pivot_wider(
+    names_from = c(season, varb),
+    names_sep = "_",
+    values_from = resp
+  )
+
+analysis_data <- traits_2011 %>%
+  left_join(fitness_wide, by = "geno")
+
+analysis_data_clean <- analysis_data %>%
+  filter(
+    !is.na(SLA),
+    !is.na(deltaC13),
+    !is.na(FDsnow),
+    !is.na(height)
+  )
+
+trait_cols <- c("SLA", "deltaC13", "FDsnow", "height")
+
+cat("Families retained:", nrow(analysis_data_clean), "\n")
+cat("Traits:", paste(trait_cols, collapse = ", "), "\n")
+
+fecund_cols <- grep("_fecund", names(analysis_data_clean), value = TRUE)
+surv_cols <- grep("_surv|survived", names(analysis_data_clean), value = TRUE)
+flower_cols <- grep("_flr", names(analysis_data_clean), value = TRUE)
+
+main_fecund_col <- grep("^2013_.*fecund",
+  names(analysis_data_clean),
+  value = TRUE
+)[1]
+
+if (is.na(main_fecund_col)) main_fecund_col <- fecund_cols[1]
+
+cat("Primary fitness variable:", main_fecund_col, "\n")
+
+# =============================================================================
+# PART 4: SINGLE-YEAR SELECTION ANALYSIS
+# =============================================================================
+
+cat("\n5. Single-year selection analysis\n")
+
+main_data <- analysis_data_clean
+main_fitness <- main_fecund_col
+
+main_data_prepared <- prepare_selection_data(
+  data = main_data,
+  fitness_col = main_fitness,
+  trait_cols = trait_cols,
+  standardize = TRUE,
+  add_relative = TRUE,
+  na_action = "warn"
 )
 
-if (save_plots) {
-  p <- correlation_surface(tps, trait_cols = trait_pair) +
-    ggtitle("Bivariate Fitness Surface")
-  ggsave(
-    filename = file.path(results_dir, "correlation_surface.png"),
-    plot = p,
-    width = 10,
-    height = 8,
-    dpi = 300
+cat("Sample size:", nrow(main_data_prepared), "\n")
+
+multi_trait_result <- selection_coefficients(
+  data = main_data,
+  fitness_col = main_fitness,
+  trait_cols = trait_cols,
+  fitness_type = "continuous",
+  standardize = TRUE
+)
+
+cat("Multivariate selection gradients:\n")
+print(multi_trait_result)
+
+# =============================================================================
+# PART 5: TEMPORAL ANALYSIS
+# =============================================================================
+
+cat("\n6. Temporal analysis\n")
+
+yearly_results <- list()
+fecund_cols <- grep("^201[2-4]_.*fecund",
+  names(analysis_data_clean),
+  value = TRUE
+)
+
+years_to_analyze <- as.integer(sub("_.*", "", fecund_cols))
+
+for (i in seq_along(fecund_cols)) {
+  year <- years_to_analyze[i]
+  fitness_col <- fecund_cols[i]
+
+  year_data <- analysis_data_clean %>%
+    filter(!is.na(.data[[fitness_col]]))
+
+  if (nrow(year_data) < 10) next
+
+  res <- selection_coefficients(
+    data = year_data,
+    fitness_col = fitness_col,
+    trait_cols = "FDsnow",
+    fitness_type = "continuous",
+    standardize = TRUE
+  )
+
+  lin <- res %>% filter(Type == "Linear")
+  quad <- res %>% filter(Type == "Quadratic")
+
+  if (nrow(lin) == 0 | nrow(quad) == 0) next
+
+  yearly_results[[as.character(year)]] <- data.frame(
+    Year = year,
+    Sample_Size = nrow(year_data),
+    Linear = lin$Beta_Coefficient,
+    Quadratic = quad$Beta_Coefficient
   )
 }
 
-## ---- 10. Save results ------------------------------------------------------
-log_msg("\n9. Saving results...\n")
-
-saveRDS(all_results, file.path(results_dir, "analysis_results.rds"))
-
-write.csv(
-  sel_binary,
-  file.path(results_dir, "selection_coefficients_binary.csv"),
-  row.names = FALSE
-)
-
-write.csv(
-  sel_continuous,
-  file.path(results_dir, "selection_coefficients_continuous.csv"),
-  row.names = FALSE
-)
-
-if (save_workspace) {
-  save.image(file.path(results_dir, "workspace.RData"))
+if (length(yearly_results) > 0) {
+  yearly_summary <- bind_rows(yearly_results)
+  print(yearly_summary)
 }
 
-## ---- 11. Final summary -----------------------------------------------------
-log_msg("\nAnalysis complete.\n")
-log_msg("Results directory: ", normalizePath(results_dir), "\n")
+# =============================================================================
+# PART 6: SAVE RESULTS
+# =============================================================================
+
+cat("\n7. Saving results\n")
+
+output_dir <- "plant_selection_results"
+if (!dir.exists(output_dir)) dir.create(output_dir)
+
+analysis_results <- list(
+  date = Sys.time(),
+  sample_size = nrow(main_data_prepared),
+  traits = trait_cols,
+  main_fitness = main_fitness,
+  multi_trait = multi_trait_result,
+  temporal = if (exists("yearly_summary")) yearly_summary else NULL
+)
+
+saveRDS(
+  analysis_results,
+  file.path(output_dir, "analysis_results.rds")
+)
+
+save.image(file.path(output_dir, "workspace.RData"))
+
+cat("Results saved to directory:", output_dir, "\n")
+
+# =============================================================================
+# PART 7: FINAL SUMMARY
+# =============================================================================
+
+cat("\n8. Summary\n")
+cat("Families analyzed:", nrow(main_data_prepared), "\n")
+cat("Traits analyzed:", length(trait_cols), "\n")
+
+if (!is.null(multi_trait_result)) {
+  sig_count <- sum(multi_trait_result$P_Value < 0.05, na.rm = TRUE)
+  cat("Significant gradients detected:", sig_count, "\n")
+}
