@@ -249,7 +249,7 @@ analysis_results <- list(
 saveRDS(
   analysis_results, 
   file.path(output_dir, "analysis_results.rds")
-  )
+)
 save.image(file.path(output_dir, "workspace.RData"))
 
 cat("Results saved to directory:", output_dir, "\n")
