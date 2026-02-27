@@ -246,7 +246,10 @@ analysis_results <- list(
   temporal = if (exists("yearly_summary")) yearly_summary else NULL
 )
 
-saveRDS(analysis_results, file.path(output_dir, "analysis_results.rds"))
+saveRDS(
+  analysis_results, 
+  file.path(output_dir, "analysis_results.rds")
+  )
 save.image(file.path(output_dir, "workspace.RData"))
 
 cat("Results saved to directory:", output_dir, "\n")
