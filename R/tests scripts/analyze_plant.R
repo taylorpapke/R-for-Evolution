@@ -22,11 +22,17 @@ cat("\n2. Loading selection analysis functions\n")
 source_dir <- ".." # Relative path to the directory containing the source files
 
 function_files <- c(
-  "prepare_selection_data.R", "analyze_linear_selection.R",
-  "analyze_nonlinear_selection.R", "extract_results.R",
-  "selection_coefficients.R", "detect_family.R", "selection_differential.R",
+  "prepare_selection_data.R", 
+  "analyze_linear_selection.R",
+  "analyze_nonlinear_selection.R", 
+  "extract_results.R",
+  "selection_coefficients.R", 
+  "detect_family.R", 
+  "selection_differential.R",
   "analyze_disruptive_selection.R",
-  "univariate_spline.R", "univariate_surface.R", "correlational_tps.R",
+  "univariate_spline.R", 
+  "univariate_surface.R", 
+  "correlational_tps.R",
   "correlation_surface.R", "bootstrap_selection.R"
 )
 
@@ -198,11 +204,38 @@ if (length(yearly_results) > 0) {
   print(yearly_summary)
 }
 
+# =============================================================================
+# PART 6: SAVE RESULTS
+# =============================================================================
+
 cat("\n7. Saving results\n")
 
 output_dir <- "plant_selection_results"
 if (!dir.exists(output_dir)) dir.create(output_dir)
 
+# 1. Save the main multivariate results to CSV
+write.csv(multi_trait_result, 
+          file = file.path(output_dir, "multivariate_selection_results.csv"), 
+          row.names = FALSE)
+
+# 2. Save the temporal analysis to CSV if it exists
+if (exists("yearly_summary")) {
+  write.csv(yearly_summary, 
+            file = file.path(output_dir, "temporal_selection_results.csv"), 
+            row.names = FALSE)
+}
+
+# 3. Create a simple text summary report
+summary_conn <- file(file.path(output_dir, "summary_report.txt"))
+writeLines(c(
+  paste("Analysis Date:", Sys.time()),
+  paste("Families analyzed:", nrow(main_data_prepared)),
+  paste("Traits analyzed:", paste(trait_cols, collapse = ", ")),
+  paste("Significant gradients:", sum(multi_trait_result$P_Value < 0.05, na.rm = TRUE))
+), summary_conn)
+close(summary_conn)
+
+# 4. Save the R-specific objects for future loading
 analysis_results <- list(
   date = Sys.time(),
   sample_size = nrow(main_data_prepared),
@@ -212,27 +245,20 @@ analysis_results <- list(
   temporal = if (exists("yearly_summary")) yearly_summary else NULL
 )
 
-saveRDS(
-  analysis_results,
-  file.path(output_dir, "analysis_results.rds")
-)
-
+saveRDS(analysis_results, file.path(output_dir, "analysis_results.rds"))
 save.image(file.path(output_dir, "workspace.RData"))
 
 cat("Results saved to directory:", output_dir, "\n")
 cat("  - multivariate_selection_results.csv\n")
 if (exists("yearly_summary")) cat("  - temporal_selection_results.csv\n")
-cat("  - selection_plots.pdf\n")
 cat("  - summary_report.txt\n")
 cat("  - analysis_results.rds (for R)\n")
 
 # =============================================================================
 # PART 7: FINAL SUMMARY
-# PART 8: FINAL SUMMARY (Console)
 # =============================================================================
 
 cat("\n8. Summary\n")
-cat("\n9. Summary\n")
 cat("Families analyzed:", nrow(main_data_prepared), "\n")
 cat("Traits analyzed:", length(trait_cols), "\n")
 
