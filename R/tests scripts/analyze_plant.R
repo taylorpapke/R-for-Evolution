@@ -33,7 +33,8 @@ function_files <- c(
   "univariate_spline.R", 
   "univariate_surface.R", 
   "correlational_tps.R",
-  "correlation_surface.R", "bootstrap_selection.R"
+  "correlation_surface.R", 
+  "bootstrap_selection.R"
 )
 
 for (f in function_files) {
