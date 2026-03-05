@@ -7,7 +7,7 @@ cat("Current working directory:", getwd(), "\n")
 
 required_packages <- c(
   "dplyr", "tidyr", "ggplot2", "mgcv", "fields",
-  "purrr", "patchwork", "viridis", "scales", "knitr"
+  "purrr", "patchwork", "viridis", "scales", "knitr", "here"
 )
 
 for (pkg in required_packages) {
@@ -36,9 +36,10 @@ function_files <- c(
 )
 
 for (f in function_files) {
-  if (file.exists(f)) {
-    source(f)
-    cat("Sourced:", f, "\n")
+  function_path <- here("R",f)
+  if (file.exists(function_path)){
+    source(function_path)
+    cat("Sourced", f, "\n")
   } else {
     cat("File not found:", f, "\n")
   }
@@ -51,10 +52,10 @@ for (f in function_files) {
 cat("\n3. Data loading and exploration\n")
 
 data_files <- list(
-  data1 = "Aster_analyses_2011_Cohort.txt",
-  data2 = "Aster_analyses_2012_Cohort_full.txt",
-  data3 = "Aster_analyses_2011_Cohort_full.txt",
-  data4 = "Aster_analyses_2012_Cohort.txt"
+  data1 = here("R","test_data","Aster_analyses_2011_Cohort.txt"),
+  data2 = here("R","test_data","Aster_analyses_2012_Cohort_full.txt"),
+  data3 = here("R","test_data","Aster_analyses_2011_Cohort_full.txt"),
+  data4 = here("R","test_data","Aster_analyses_2012_Cohort.txt")
 )
 
 data1 <- read.delim(data_files$data1, sep = "\t")
@@ -102,6 +103,8 @@ analysis_data_clean <- analysis_data %>%
     !is.na(height)
   )
 
+names(analysis_data_clean) <- make.names(names(analysis_data_clean))
+
 trait_cols <- c("SLA", "deltaC13", "FDsnow", "height")
 
 cat("Families retained:", nrow(analysis_data_clean), "\n")
@@ -111,7 +114,7 @@ fecund_cols <- grep("_fecund", names(analysis_data_clean), value = TRUE)
 surv_cols <- grep("_surv|survived", names(analysis_data_clean), value = TRUE)
 flower_cols <- grep("_flr", names(analysis_data_clean), value = TRUE)
 
-main_fecund_col <- grep("^2013_.*fecund",
+main_fecund_col <- grep("^X2013_.*fecund",
   names(analysis_data_clean),
   value = TRUE
 )[1]
@@ -206,7 +209,7 @@ if (length(yearly_results) > 0) {
 
 cat("\n7. Saving results\n")
 
-output_dir <- "plant_selection_results"
+output_dir <- here("R","results","plant_selection_results")
 if (!dir.exists(output_dir)) dir.create(output_dir)
 
 analysis_results <- list(
