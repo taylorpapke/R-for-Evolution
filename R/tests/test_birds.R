@@ -287,7 +287,7 @@ if (all(c(beak_trait, "PC.body1") %in% names(main_data))) {
 
 ## 6.3 VISUALIZATION FUNCTIONS -------------------------------------------------
 
-cat("Testing univariate_spline and univariate_surface...\n")
+cat("Testing univariate_spline and plot_univariate_fitness...\n")
 traits_for_vis <- intersect(c(beak_trait, "PC.body1"), names(main_data_prepared))
 
 for (trait in traits_for_vis) {
@@ -301,17 +301,11 @@ for (trait in traits_for_vis) {
       k = 8
     )
     
-    surface_plot <- univariate_surface(
+    surface_plot <- plot_univariate_fitness(
       uni = spline_result,
-      trait_col = trait
-    ) +
-      labs(
-        title = paste("Fitness Surface -", trait),
-        subtitle = paste("Year:", best_year),
-        x = paste(trait, "(standardized)"),
-        y = "Relative Fitness"
-      ) +
-      theme_minimal()
+      trait_col = trait,
+      title = paste("Fitness Surface -", trait, "- Year:", best_year)
+    )
     
     print(surface_plot)
     cat(" ✓\n")
@@ -322,9 +316,9 @@ for (trait in traits_for_vis) {
 
 
 if (length(traits_for_model) >= 2) {
-  cat("Testing correlational_tps and correlation_surface...\n")
+  cat("Testing correlated_fitness_surface and plot_correlated_fitness...\n")
   tryCatch({
-    tps_result <- correlational_tps(
+    tps_result <- correlated_fitness_surface(
       data = main_data_prepared,
       fitness_col = "fitness",
       trait_cols = traits_for_model[1:2],
@@ -332,7 +326,7 @@ if (length(traits_for_model) >= 2) {
       method = "auto"
     )
     
-    corr_plot <- correlation_surface(
+    corr_plot <- plot_correlated_fitness(
       tps = tps_result,
       trait_cols = traits_for_model[1:2]
     ) +
@@ -358,7 +352,7 @@ if (length(traits_for_model) >= 2) {
   for (method in methods_to_test) {
     cat("Method:", method, "...")
     tryCatch({
-      method_tps <- correlational_tps(
+      method_tps <- correlated_fitness_surface(
         data = main_data_prepared,
         fitness_col = "fitness",
         trait_cols = traits_for_model[1:2],
@@ -366,7 +360,7 @@ if (length(traits_for_model) >= 2) {
         method = method
       )
       
-      method_plot <- correlation_surface(
+      method_plot <- plot_correlated_fitness(
         tps = method_tps,
         trait_cols = traits_for_model[1:2]
       ) +
