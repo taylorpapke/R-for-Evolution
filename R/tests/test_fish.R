@@ -1,41 +1,146 @@
+# =============================================================================
+# PART 1: SETUP AND INITIALIZATION
+# =============================================================================
 
-## 1. Set up output directory -------------------------------------------------
+cat("1. Working directory and package initialization\n")
+cat("Current working directory:", getwd(), "\n")
 
-results_dir <- "function_test_results"
-if (!dir.exists(results_dir)) {
-  dir.create(results_dir)
-  cat("   Created output directory:", results_dir, "\n")
-} else {
-  cat("   Using existing output directory:", results_dir, "\n")
+required_packages <- c(
+  "dplyr", "tidyr", "ggplot2", "mgcv", "fields",
+  "purrr", "patchwork", "viridis", "scales", "knitr", "here"
+)
+
+for (pkg in required_packages) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    install.packages(pkg, repos = "https://cloud.r-project.org")
+  }
+  library(pkg, character.only = TRUE)
+  cat("   Loaded package:", pkg, "\n")
 }
 
-## 2. Load data and function definitions -------------------------------------
-cat("\n2. LOADING DATA AND FUNCTIONS...\n")
+# =============================================================================
+# PART 2: LOADING FUNCTIONS
+# =============================================================================
 
-# Load Crescent Pond puppyfish dataset
-data_dir <- file.path("..", "test_data")
-crescent_path <- NULL
+cat("\n2. LOADING FUNCTIONS...\n")
 
-# Try exact filenames (URL-encoded and standard)
-possible_names <- c(
+function_files <- c(
+  "extract_results.R",
+  "detect_family.R",
+  "selection_coefficients.R",
+  "selection_differential.R",
+  "univariate_spline.R", 
+  "univariate_surface.R",
+  "correlational_tps.R", 
+  "correlation_surface.R"
+)
+
+script_files <- c(
+  "1_prepare_selection_data.R",
+  "2_linear_selection_analysis.R",
+  "3_nonlinear_selection_analysis.R"
+)
+
+for (f in function_files) {
+  # Functions located in R/functions
+  file_path <- here("R", "functions", f)
+  if (file.exists(file_path)) {
+    source(file_path)
+    cat("   Sourced:", f, "\n")
+  } else {
+    cat("   File not found:", file_path, "\n")
+  }
+}
+
+for (s in script_files) {
+  # Functions located in R/scripts
+  file_path <- here("R", "scripts", s)
+  if (file.exists(file_path)) {
+    source(file_path)
+    cat("   Sourced:", s, "\n")
+  } else {
+    cat("   File not found:", file_path, "\n")
+  }
+}
+
+# =============================================================================
+# PART 3: DATA LOADING AND PREPARATION
+# =============================================================================
+
+cat("\n3. DATA LOADING AND PREPARATION...\n")
+
+# Define data directories to search
+data_dirs <- c(here("R", "data"), here("R", "test_data"))
+
+# Helper function to find files in directories
+find_data_file <- function(filenames, dirs) {
+  for (d in dirs) {
+    if (dir.exists(d)) {
+      for (f in filenames) {
+        p <- file.path(d, f)
+        if (file.exists(p)) return(p)
+      }
+    }
+  }
+  return(NULL)
+}
+
+# 1. Load Crescent Pond puppyfish dataset
+crescent_names <- c(
   "Crescent+Pond+-+size-corrected+trait+data+++survival+++growth+++d13C+++d15N.csv",
   "Crescent Pond - size-corrected trait data + survival + growth + d13C + d15N.csv"
 )
+crescent_path <- find_data_file(crescent_names, data_dirs)
 
-for (f in possible_names) {
-  p <- file.path(data_dir, f)
-  if (file.exists(p)) { crescent_path <- p; break }
+# Fallback: fuzzy search if not found
+if (is.null(crescent_path)) {
+  for (d in data_dirs) {
+    if (dir.exists(d)) {
+      candidates <- list.files(d, pattern = "Crescent.*Pond.*\\.csv$", full.names = TRUE)
+      if (length(candidates) > 0) {
+        crescent_path <- candidates[1]
+        break
+      }
+    }
+  }
 }
 
-# Fallback: fuzzy search in the data directory if not found
-if (is.null(crescent_path) && dir.exists(data_dir)) {
-  candidates <- list.files(data_dir, pattern = "Crescent.*Pond.*\\.csv$", full.names = TRUE)
-  if (length(candidates) > 0) crescent_path <- candidates[1]
+if (is.null(crescent_path)) {
+  stop("Data file 'Crescent Pond...' not found in data directories.")
 }
-
-if (is.null(crescent_path) || !file.exists(crescent_path)) stop("Data file 'Crescent Pond...' not found in 'R/test_data/' directory.")
 cat("   Using data file:", crescent_path, "\n")
 crescent_data <- read.csv(crescent_path)
+
+# 2. Load Little Lake puppyfish dataset
+ll_names <- c(
+  "Little+Lake+-+size-corrected+trait+data+++survival+++growth+++d13C+++d15N.csv",
+  "Little Lake - size-corrected trait data + survival + growth + d13C + d15N.csv"
+)
+ll_path <- find_data_file(ll_names, data_dirs)
+if (!is.null(ll_path)) {
+  cat("   Using data file:", ll_path, "\n")
+  little_lake_data <- read.csv(ll_path)
+} else {
+  cat("   [INFO] Little Lake data not found.\n")
+}
+
+# 3. Load Isotopes dataset
+iso_path <- find_data_file("isotopes.csv", data_dirs)
+if (!is.null(iso_path)) {
+  cat("   Using data file:", iso_path, "\n")
+  isotopes_data <- read.csv(iso_path)
+} else {
+  cat("   [INFO] Isotopes data not found.\n")
+}
+
+# 4. Load Raw Data
+raw_path <- find_data_file("rawdata.csv", data_dirs)
+if (!is.null(raw_path)) {
+  cat("   Using data file:", raw_path, "\n")
+  raw_data <- read.csv(raw_path)
+} else {
+  cat("   [INFO] Raw data not found.\n")
+}
 
 # Define fitness variables and trait set
 fitness_binary     <- "survival"
@@ -43,40 +148,25 @@ fitness_continuous <- "ln.growth"
 morphological_traits <- c("jaw", "eye", "body", "nasal", "mouth", "SL")
 
 # Assemble analysis dataset
-test_data <- crescent_data[, c(fitness_binary, fitness_continuous, morphological_traits)]
-test_data <- test_data[complete.cases(test_data), ]
+test_data <- crescent_data %>%
+  select(all_of(c(fitness_binary, fitness_continuous, morphological_traits))) %>%
+  filter(complete.cases(.))
 
 cat("   Test dataset contains", nrow(test_data), "complete observations\n")
 
-# Load core analysis functions
-function_files <- c(
-  "prepare_selection_data.R", "selection_coefficients.R",
-  "univariate_spline.R", "univariate_surface.R",
-  "correlational_tps.R", "correlation_surface.R"
-)
+# =============================================================================
+# PART 4: RUN ANALYSES AND RECORD RESULTS
+# =============================================================================
 
-for (func_file in function_files) {
-  file_path <- file.path("..", func_file)
-  if (file.exists(file_path)) {
-    source(file_path)
-    cat("   Loaded:", func_file, "\n")
-  }
+cat("\n4. RUNNING ANALYSES AND RECORDING RESULTS...\n")
+
+results_dir <- here("R", "tests", "function_test_results")
+if (!dir.exists(results_dir)) {
+  dir.create(results_dir, recursive = TRUE)
+  cat("   Created output directory:", results_dir, "\n")
+} else {
+  cat("   Using existing output directory:", results_dir, "\n")
 }
-
-## 2.1 Load required packages ------------------------------------------------
-cat("   2.1 LOADING PACKAGES...\n")
-
-required_packages <- c("ggplot2", "mgcv") # ggplot2 for plotting, mgcv for splines
-for (pkg in required_packages) {
-  if (!requireNamespace(pkg, quietly = TRUE)) {
-    install.packages(pkg)
-  }
-  library(pkg, character.only = TRUE)
-  cat("   Loaded:", pkg, "\n")
-}
-
-## 3. Run analyses and record results ----------------------------------------
-cat("\n3. RUNNING ANALYSES AND RECORDING RESULTS...\n")
 
 # Initialize master results object
 all_results <- list(
@@ -94,8 +184,8 @@ all_results <- list(
   validation_summary = list()
 )
 
-## 3.1 Data preparation -------------------------------------------------------
-cat("   3.1 DATA PREPARATION...\n")
+## 4.1 Data preparation -------------------------------------------------------
+cat("   4.1 DATA PREPARATION...\n")
 
 if (exists("prepare_selection_data")) {
   
@@ -144,8 +234,8 @@ if (exists("prepare_selection_data")) {
   cat("   Data preparation completed\n")
 }
 
-## 3.2 Selection coefficient analysis ----------------------------------------
-cat("   3.2 SELECTION COEFFICIENT ANALYSIS...\n")
+## 4.2 Selection coefficient analysis ----------------------------------------
+cat("   4.2 SELECTION COEFFICIENT ANALYSIS...\n")
 
 if (exists("selection_coefficients")) {
   
@@ -200,8 +290,8 @@ if (exists("selection_coefficients")) {
   cat("   Selection coefficient analysis completed\n")
 }
 
-## 3.3 Fitness surface estimation --------------------------------------------
-cat("   3.3 FITNESS SURFACE ESTIMATION...\n")
+## 4.3 Fitness surface estimation --------------------------------------------
+cat("   4.3 FITNESS SURFACE ESTIMATION...\n")
 
 if (exists("univariate_spline") && !is.null(prepared_binary)) {
   
@@ -284,3 +374,19 @@ if (exists("correlational_tps") && !is.null(prepared_binary)) {
   
   cat("   Correlational fitness surface completed\n")
 }
+
+# =============================================================================
+# PART 5: SAVE SUMMARY
+# =============================================================================
+
+cat("\n5. SAVING SUMMARY...\n")
+
+# Save the results object
+saveRDS(all_results, file = file.path(results_dir, "all_results.rds"))
+
+if (!is.null(all_results$selection_analysis$binary$results)) {
+  cat("\nBinary Selection Results Summary (Top 5):\n")
+  print(head(all_results$selection_analysis$binary$results))
+}
+
+cat("\nAnalysis complete. Results saved to:", results_dir, "\n")
