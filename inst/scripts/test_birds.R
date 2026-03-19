@@ -6,7 +6,7 @@ cat("Current working directory:", getwd(), "\n")
 if (!requireNamespace("here", quietly = TRUE)) install.packages("here")
 library(here)
 
-data_path <- here("R", "data", "bird_data.csv")
+data_path <- here("inst", "extdata", "bird_data.csv")
 
 if (file.exists(data_path)) {
   bird_study <- read.csv(data_path, stringsAsFactors = FALSE)
@@ -74,8 +74,8 @@ for (pkg in required_packages) {
 # ------------------------------------------------------
 # 1 Initialize environment
 # ------------------------------------------------------
-if (file.exists(here("R", "scripts", "0.0_initialize.R"))) {
-  source(here("R", "scripts", "0.0_initialize.R"))
+if (file.exists(here("R", "0.0_initialize.R"))) {
+  source(here("R", "0.0_initialize.R"))
 }
 
 # ------------------------------------------------------
@@ -84,7 +84,7 @@ if (file.exists(here("R", "scripts", "0.0_initialize.R"))) {
 cat("\nLoading function files and plotting files...\n")
 
 fn_files <- list.files(
-  here("R", "functions"),
+  here("R"),
   pattern = "\\.R$",
   full.names = TRUE
 )
@@ -95,7 +95,7 @@ for (f in fn_files) {
 }
 
 script_files <- list.files(
-  here("R", "scripts"),
+  here("R"),
   pattern = "\\.R$",
   full.names = TRUE
 )
@@ -108,7 +108,7 @@ for (f in script_files) {
 }
 
 plot_files <- list.files(
-  here("R", "plotting"),
+  here("R"),
   pattern = "\\.R$",
   full.names = TRUE
 )
