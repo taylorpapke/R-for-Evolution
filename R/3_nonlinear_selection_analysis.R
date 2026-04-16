@@ -1,10 +1,10 @@
 # ============================================================================
 # analyze_nonlinear_selection
 #
-# Purpose: Estimate quadratic (γ) and correlational (γ_ij) selection gradients
+# Purpose: Estimate quadratic (gamma) and correlational (gamma_ij) selection gradients
 #
 # IMPORTANT NOTE:
-#   - ALWAYS use OLS to estimate selection gradients (β, γ, γ_ij)
+#   - ALWAYS use OLS to estimate selection gradients (beta, gamma, gamma_ij)
 #   - For binary fitness: OLS gives the correct gradient estimates, but p-values
 #     come from logistic GLM (with Wald tests) because OLS residuals violate
 #     normality assumptions.
@@ -12,16 +12,16 @@
 #     p-values (via t-tests and F-tests).
 #
 # Model:
-#   w = α + β₁z₁ + β₂z₂ + ½γ₁₁z₁² + ½γ₂₂z₂² + γ₁₂z₁z₂ + ε
+#   w = alpha + beta1*z1 + beta2*z2 + 0.5*gamma11*z1^2 + 0.5*gamma22*z2^2 + gamma12*z1*z2 + epsilon
 #
 # Where:
-#   - β = linear selection gradients
-#   - γ_ii = quadratic selection gradients (stabilizing/disruptive)
-#   - γ_ij = correlational selection gradients (interactions)
+#   - beta = linear selection gradients
+#   - gamma_ii = quadratic selection gradients (stabilizing/disruptive)
+#   - gamma_ij = correlational selection gradients (interactions)
 #
 # Workflow:
 #   1. Build formula with linear, quadratic, and interaction terms
-#   2. Fit OLS to get all gradient estimates (β, γ, γ_ij)
+#   2. Fit OLS to get all gradient estimates (beta, gamma, gamma_ij)
 #   3. For binary fitness: fit logistic GLM for valid p-values
 #   4. Type III ANOVA for significance tests
 #   5. VIF check for multicollinearity
@@ -41,6 +41,8 @@
 #' @param trait_cols A character vector of trait column names.
 #' @param fitness_type A string indicating the fitness type: \code{"binary"} or \code{"continuous"}.
 #'
+#' @importFrom utils combn
+#' @importFrom stats as.formula complete.cases lm glm binomial coef
 #' @return A list containing the fitted nonlinear models, summaries, ANOVA tables, and VIFs.
 #' @export
 analyze_nonlinear_selection <- function(data, fitness_col, trait_cols, fitness_type) {
@@ -49,7 +51,7 @@ analyze_nonlinear_selection <- function(data, fitness_col, trait_cols, fitness_t
   }
 
   if (nrow(data) < 20) {
-    warning("Small sample size (n < 20) — nonlinear estimates may be unreliable")
+    warning("Small sample size (n < 20) - nonlinear estimates may be unreliable")
   }
 
   # Quadratic terms: I(trait1^2), I(trait2^2), ...
@@ -78,7 +80,7 @@ analyze_nonlinear_selection <- function(data, fitness_col, trait_cols, fitness_t
   if (nrow(fit_data) < n_params * 2) {
     warning(
       "Sample size (", nrow(fit_data), ") may be too small for ",
-      n_params, " parameters — results may be unreliable"
+      n_params, " parameters - results may be unreliable"
     )
   }
 
@@ -97,7 +99,7 @@ analyze_nonlinear_selection <- function(data, fitness_col, trait_cols, fitness_t
       }
     )
     if (!is.null(vif_vals) && any(vif_vals > 5)) {
-      warning("High multicollinearity detected (VIF > 5) — standard errors may be inflated")
+      warning("High multicollinearity detected (VIF > 5) - standard errors may be inflated")
     }
   }
 
@@ -115,11 +117,11 @@ analyze_nonlinear_selection <- function(data, fitness_col, trait_cols, fitness_t
 
     # Convergence: If GLM doesn't converge, results are unreliable
     if (!fit_glm$converged) {
-      warning("Nonlinear GLM did not converge — results may be unreliable")
+      warning("Nonlinear GLM did not converge - results may be unreliable")
     }
 
     if (any(abs(coef(fit_glm)) > 10)) {
-      warning("Possible complete separation detected — large coefficients (>10)")
+      warning("Possible complete separation detected - large coefficients (>10)")
     }
 
     # Type III ANOVA
@@ -133,7 +135,7 @@ analyze_nonlinear_selection <- function(data, fitness_col, trait_cols, fitness_t
         }
       )
     } else {
-      warning("Package 'car' not installed — skipping Type III ANOVA")
+      warning("Package 'car' not installed - skipping Type III ANOVA")
     }
 
     return(list(
@@ -155,7 +157,7 @@ analyze_nonlinear_selection <- function(data, fitness_col, trait_cols, fitness_t
         }
       )
     } else {
-      warning("Package 'car' not installed — skipping Type III ANOVA")
+      warning("Package 'car' not installed - skipping Type III ANOVA")
     }
 
     return(list(

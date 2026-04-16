@@ -22,7 +22,7 @@ required_packages <- c(
     "ggrepel", # for text labels in plots
     "viridis",
     "patchwork",
-    "akima",
+    "interp",
     "car"
 )
 

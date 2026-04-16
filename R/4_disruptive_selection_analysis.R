@@ -3,19 +3,19 @@
 #
 # Purpose: Detect disruptive or stabilizing selection on a single trait
 #
-# Model: w = α + βz + γz² + ε
+# Model: w = alpha + beta*z + gamma*z^2 + epsilon
 #   where:
-#     β = linear selection gradient (directional selection)
-#     γ = quadratic selection gradient (γ > 0: disruptive; γ < 0: stabilizing)
+#     beta = linear selection gradient (directional selection)
+#     gamma = quadratic selection gradient (gamma > 0: disruptive; gamma < 0: stabilizing)
 #
 # IMPORTANT NOTES:
-#   For ALL fitness types, selection gradients (β and γ) come from OLS.
+#   For ALL fitness types, selection gradients (beta and gamma) come from OLS.
 #   P-values come from:
 #     - Continuous fitness: OLS (t-tests are valid)
 #     - Binary fitness: Logistic GLM (Wald tests)
 #
-#   Quadratic coefficients are multiplied by 2 to obtain γ following
-#   Lande & Arnold (1983): γ_ii = 2 × β_quad
+#   Quadratic coefficients are multiplied by 2 to obtain gamma following
+#   Lande & Arnold (1983): gamma_ii = 2 * beta_quad
 #
 #   Standardization is done WITHIN each group (e.g., year) to ensure
 #   individuals are compared relative to their relevant context.
@@ -32,9 +32,9 @@
 #
 # Returns:
 #   Data frame with:
-#     Term              : trait name and "trait²"
+#     Term              : trait name and "trait^2"
 #     Type              : "Linear" or "Quadratic"
-#     Beta_Coefficient  : selection gradient (β or γ)
+#     Beta_Coefficient  : selection gradient (beta or gamma)
 #     Standard_Error    : standard error of estimate
 #     P_Value           : statistical significance (from appropriate source)
 #     Variance          : squared standard error
@@ -51,6 +51,7 @@
 #' @param standardize Logical indicating whether to standardize the trait to mean 0 and SD 1. Default is \code{TRUE}.
 #' @param group Optional string specifying a grouping variable.
 #'
+#' @importFrom stats as.formula lm glm binomial
 #' @return A data frame containing selection coefficients and statistics.
 #' @export
 analyze_disruptive_selection <- function(
@@ -84,11 +85,11 @@ analyze_disruptive_selection <- function(
 
   quad_term <- paste0("I(", trait_col, "^2)")
 
-  # Linear term (β) from OLS
+  # Linear term (beta) from OLS
   beta_linear <- coef_ols[trait_col, "Estimate"]
   se_linear <- coef_ols[trait_col, "Std. Error"]
 
-  # Quadratic term (γ = 2 × β_quad) from OLS
+  # Quadratic term (gamma = 2 * beta_quad) from OLS
   if (quad_term %in% rownames(coef_ols)) {
     gamma_quad <- 2 * coef_ols[quad_term, "Estimate"]
     se_quad <- 2 * coef_ols[quad_term, "Std. Error"]
@@ -126,7 +127,7 @@ analyze_disruptive_selection <- function(
   }
 
   results <- data.frame(
-    Term = c(trait_col, paste0(trait_col, "²")),
+    Term = c(trait_col, paste0(trait_col, "^2")),
     Type = c("Linear", "Quadratic"),
     Beta_Coefficient = c(beta_linear, gamma_quad),
     Standard_Error = c(se_linear, se_quad),

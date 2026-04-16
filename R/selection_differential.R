@@ -39,6 +39,7 @@
 #'
 #' Computes the selection differential S = Cov(z, w) for a single trait.
 #'
+#' @importFrom dplyr %>%
 #' @param data A data frame containing fitness and trait measurements.
 #' @param fitness_col A string specifying the name of the fitness column.
 #' @param trait_col A string specifying the name of the trait column.

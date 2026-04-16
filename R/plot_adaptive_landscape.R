@@ -180,6 +180,7 @@ plot_adaptive_landscape <- function(
 
 #' Plot Adaptive Landscape (3D Perspective)
 #'
+#' @importFrom stats rnorm
 #' @param landscape Output object of class \code{"adaptive_landscape"}.
 #' @param trait_cols Character vector of length 2 specifying the trait column names.
 #' @param theta Numeric azimuthal viewing angle. Default is -30.
@@ -219,7 +220,7 @@ plot_adaptive_landscape_3d <- function(
     x <- x + rnorm(length(x), 0, 1e-8)
     y <- y + rnorm(length(y), 0, 1e-8)
 
-    interp <- akima::interp(
+    interp <- interp::interp(
         x = x,
         y = y,
         z = z,

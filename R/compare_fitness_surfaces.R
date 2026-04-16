@@ -138,7 +138,7 @@ compare_fitness_surfaces_data <- function(
     correlation <- NULL
     if (calculate_correlation && n_cor == n_ada) {
         # Need to align points by trait values
-        if (requireNamespace("akima", quietly = TRUE)) {
+        if (requireNamespace("interp", quietly = TRUE)) {
             # Create common grid
             x_range <- range(c(cor_df[[trait_cols[1]]], ada_df[[trait_cols[1]]]))
             y_range <- range(c(cor_df[[trait_cols[2]]], ada_df[[trait_cols[2]]]))
@@ -147,11 +147,11 @@ compare_fitness_surfaces_data <- function(
             y_grid <- seq(y_range[1], y_range[2], length.out = 50)
 
             # Interpolate both surfaces
-            cor_interp <- akima::interp(
+            cor_interp <- interp::interp(
                 cor_df[[trait_cols[1]]], cor_df[[trait_cols[2]]], cor_df$fitness,
                 xo = x_grid, yo = y_grid, linear = TRUE
             )
-            ada_interp <- akima::interp(
+            ada_interp <- interp::interp(
                 ada_df[[trait_cols[1]]], ada_df[[trait_cols[2]]], ada_df$fitness,
                 xo = x_grid, yo = y_grid, linear = TRUE
             )
@@ -161,7 +161,7 @@ compare_fitness_surfaces_data <- function(
             )
         } else {
             # Fallback: use raw grid points (may not be aligned)
-            warning("Package 'akima' not installed. Correlation may be approximate.")
+            warning("Package 'interp' not installed. Correlation may be approximate.")
             correlation <- cor(cor_df$fitness, ada_df$fitness, use = "complete.obs")
         }
     }

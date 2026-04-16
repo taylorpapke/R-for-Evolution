@@ -44,6 +44,7 @@
 #' Cleans, standardizes, and calculates relative fitness for trait and fitness data.
 #' Standardizations and relative fitness calculations can be performed within groups.
 #'
+#' @importFrom dplyr %>%
 #' @param data A data frame containing fitness and trait measurements.
 #' @param fitness_col A string specifying the name of the fitness column.
 #' @param trait_cols A character vector of trait column names.

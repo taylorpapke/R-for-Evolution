@@ -1,11 +1,11 @@
 # ============================================================================
 # analyze_linear_selection
 #
-# Purpose: Estimate linear selection gradients (β) using Lande & Arnold (1983)
+# Purpose: Estimate linear selection gradients (beta) using Lande & Arnold (1983)
 #
 # IMPORTANT NOTE:
 #   - ALWAYS use OLS (ordinary least squares) to estimate selection gradients
-#   - For binary fitness (0/1 survival): OLS gives the correct β estimates,
+#   - For binary fitness (0/1 survival): OLS gives the correct beta estimates,
 #     but the p-values from OLS are not trustworthy because residuals violate
 #     normality assumptions. Therefore, we use logistic regression (GLM)
 #     specifically to obtain valid p-values.
@@ -15,13 +15,13 @@
 #
 # Workflow:
 #   Continuous fitness:
-#     1. Fit OLS model → coefficients = selection gradients (β)
+#     1. Fit OLS model -> coefficients = selection gradients (beta)
 #     2. p-values come directly from OLS summary
 #     3. Type III ANOVA (car::Anova) for significance of each term
 #     4. Check VIF for multicollinearity
 #
 #   Binary fitness:
-#     1. Fit OLS model → coefficients = selection gradients (β)
+#     1. Fit OLS model -> coefficients = selection gradients (beta)
 #     2. Fit logistic GLM model → p-values from Wald tests (Type III)
 #     3. Check convergence and separation
 #     4. Type III ANOVA on GLM for overall term significance
@@ -42,12 +42,13 @@
 #' @param trait_cols A character vector of trait column names.
 #' @param fitness_type A string indicating the fitness type: \code{"binary"} or \code{"continuous"}.
 #'
+#' @importFrom stats as.formula complete.cases lm glm binomial coef
 #' @return A list containing the fitted models, summaries, ANOVA tables, and VIFs.
 #' @export
 analyze_linear_selection <- function(data, fitness_col, trait_cols, fitness_type) {
   # Check sample size
   if (nrow(data) < 10) {
-    warning("Small sample size (n < 10) — results may be unreliable")
+    warning("Small sample size (n < 10) - results may be unreliable")
   }
 
   # Build fitness ~ trait1 + trait2 + trait3
@@ -69,7 +70,7 @@ analyze_linear_selection <- function(data, fitness_col, trait_cols, fitness_type
     fit_ols <- lm(fml, data = fit_data)
     sm_ols <- summary(fit_ols)
 
-    # Type III ANOVA, it gives the partial regression coefficients (β) and their significance.
+    # Type III ANOVA, it gives the partial regression coefficients (beta) and their significance.
     anova_cont <- NULL
     if (requireNamespace("car", quietly = TRUE)) {
       anova_cont <- tryCatch(
@@ -80,7 +81,7 @@ analyze_linear_selection <- function(data, fitness_col, trait_cols, fitness_type
         }
       )
     } else {
-      warning("Package 'car' not installed — skipping Type III ANOVA")
+      warning("Package 'car' not installed - skipping Type III ANOVA")
     }
 
     # Variance Inflation Factor (VIF) check
@@ -94,7 +95,7 @@ analyze_linear_selection <- function(data, fitness_col, trait_cols, fitness_type
         }
       )
       if (!is.null(vif_vals) && any(vif_vals > 5)) {
-        warning("High multicollinearity detected (VIF > 5) — standard errors may be inflated")
+        warning("High multicollinearity detected (VIF > 5) - standard errors may be inflated")
       }
     }
 
@@ -122,11 +123,11 @@ analyze_linear_selection <- function(data, fitness_col, trait_cols, fitness_type
 
     # Convergence: If the GLM algorithm fails to converge, results are unreliable
     if (!fit_glm$converged) {
-      warning("GLM did not converge — results may be unreliable")
+      warning("GLM did not converge - results may be unreliable")
     }
 
     if (any(abs(coef(fit_glm)) > 10)) {
-      warning("Possible complete separation detected — large coefficients (>10)")
+      warning("Possible complete separation detected - large coefficients (>10)")
     }
 
     # Type III ANOVA
@@ -140,7 +141,7 @@ analyze_linear_selection <- function(data, fitness_col, trait_cols, fitness_type
         }
       )
     } else {
-      warning("Package 'car' not installed — skipping Type III ANOVA")
+      warning("Package 'car' not installed - skipping Type III ANOVA")
     }
 
     # Variance Inflation Factor (VIF) check
@@ -154,13 +155,13 @@ analyze_linear_selection <- function(data, fitness_col, trait_cols, fitness_type
         }
       )
       if (!is.null(vif_vals) && any(vif_vals > 5)) {
-        warning("High multicollinearity detected (VIF > 5) — standard errors may be inflated")
+        warning("High multicollinearity detected (VIF > 5) - standard errors may be inflated")
       }
     }
 
     return(list(
       model = list(
-        ols = fit_ols, # lm object (coefficients = β)
+        ols = fit_ols, # lm object (coefficients = beta)
         glm = fit_glm # glm object (for p-values and ANOVA)
       ),
       summary = list(

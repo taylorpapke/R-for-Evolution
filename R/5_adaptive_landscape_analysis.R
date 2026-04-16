@@ -4,11 +4,11 @@
 #
 # IMPORTANT CONCEPT:
 # Adaptive Landscape = Mean fitness ~ Population mean phenotype
-# Formula: W̄ ~ z̄₁ + z̄₂
+# Formula: W-bar ~ z-bar_1 + z-bar_2
 #
 # This is DIFFERENT from correlated fitness surface:
 # - Correlated fitness: w ~ z (individual fitness)
-# - Adaptive landscape: W̄ ~ z̄ (population mean fitness)
+# - Adaptive landscape: W-bar ~ z-bar (population mean fitness)
 #
 # KEY PRINCIPLE:
 # - Traits MUST already be standardized (mean = 0, SD = 1)
@@ -236,7 +236,7 @@ print.adaptive_landscape <- function(x, ...) {
     # Check if traits were standardized
     if (!is.null(x$data_summary$traits_standardized)) {
         if (x$data_summary$traits_standardized) {
-            cat("Traits: standardized (mean ≈ 0, SD ≈ 1)\n")
+            cat("Traits: standardized (mean approx 0, SD approx 1)\n")
         } else {
             cat("WARNING: Traits may not be standardized!\n")
         }

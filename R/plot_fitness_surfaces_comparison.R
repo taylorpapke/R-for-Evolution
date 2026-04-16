@@ -12,6 +12,7 @@
 #' Visualizes the comparison between individual-level correlated fitness 
 #' and population-level adaptive landscape.
 #'
+#' @importFrom grDevices colorRampPalette
 #' @param comparison_data Output list from \code{compare_fitness_surfaces_data()}.
 #' @param bins Integer specifying the number of contour bins. Default is 10.
 #' @param title Optional character string for the overarching plot title.

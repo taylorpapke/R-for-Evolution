@@ -77,7 +77,7 @@ univariate_spline <- function(data,
       "Consider using prepare_selection_data() first."
     )
   } else {
-    message("Trait appears standardized (mean ≈ 0, SD ≈ 1)")
+    message("Trait appears standardized (mean approx 0, SD approx 1)")
   }
 
   if (fitness_type == "continuous") {

@@ -97,6 +97,7 @@
 #' @param trait_cols A character vector of trait column names.
 #' @param results A model results object returned by \code{analyze_linear_selection()}.
 #'
+#' @importFrom stats coef
 #' @return A data frame with linear selection coefficients and statistics.
 #' @export
 extract_linear_coefficients <- function(trait_cols, results) {
@@ -180,6 +181,7 @@ extract_linear_coefficients <- function(trait_cols, results) {
 #' @param trait_cols A character vector of trait column names.
 #' @param results A model results object returned by \code{analyze_nonlinear_selection()}.
 #'
+#' @importFrom stats coef
 #' @return A data frame with quadratic selection coefficients (doubled estimates) and statistics.
 #' @export
 extract_quadratic_coefficients <- function(trait_cols, results) {
@@ -210,7 +212,7 @@ extract_quadratic_coefficients <- function(trait_cols, results) {
       }
 
       data.frame(
-        Term = paste0(t, "²"),
+        Term = paste0(t, "^2"),
         Type = "Quadratic",
         Beta_Coefficient = as.numeric(est),
         Standard_Error = as.numeric(se),
@@ -250,7 +252,7 @@ extract_quadratic_coefficients <- function(trait_cols, results) {
       }
 
       data.frame(
-        Term = paste0(t, "²"),
+        Term = paste0(t, "^2"),
         Type = "Quadratic",
         Beta_Coefficient = as.numeric(est),
         Standard_Error = as.numeric(se),
@@ -278,6 +280,7 @@ extract_quadratic_coefficients <- function(trait_cols, results) {
 #' @param trait_cols A character vector of trait column names.
 #' @param results A model results object returned by \code{analyze_nonlinear_selection()}.
 #'
+#' @importFrom utils combn
 #' @return A data frame with correlational (interaction) selection coefficients and statistics.
 #' @export
 extract_interaction_coefficients <- function(trait_cols, results) {
@@ -290,7 +293,7 @@ extract_interaction_coefficients <- function(trait_cols, results) {
   }
 
   obj <- .get_summary_and_pcol(results)
-  pairs <- utils::combn(trait_cols, 2, simplify = FALSE)
+  pairs <- combn(trait_cols, 2, simplify = FALSE)
 
   if (obj$is_binary) {
     # Binary case: gradients from OLS, p-values from GLM
@@ -316,7 +319,7 @@ extract_interaction_coefficients <- function(trait_cols, results) {
       }
 
       data.frame(
-        Term = paste(p[1], "×", p[2]),
+        Term = paste(p[1], "x", p[2]),
         Type = "Correlational",
         Beta_Coefficient = as.numeric(est),
         Standard_Error = as.numeric(se),
@@ -356,7 +359,7 @@ extract_interaction_coefficients <- function(trait_cols, results) {
       }
 
       data.frame(
-        Term = paste(p[1], "×", p[2]),
+        Term = paste(p[1], "x", p[2]),
         Type = "Correlational",
         Beta_Coefficient = as.numeric(est),
         Standard_Error = as.numeric(se),
